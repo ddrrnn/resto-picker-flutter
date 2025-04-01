@@ -1,0 +1,3 @@
+Pop-up Card: https://pub.dev/packages/flutter_popup_card/example 
+
+SQFlite Tutorials: https://youtube.com/playlist?list=PL_flqTNT2bUlT1AKFkLBeDyvv1Hp10lfK&si=GD8VkTci-ItzpcDs 

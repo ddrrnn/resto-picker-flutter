@@ -4,6 +4,10 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:resto_picker/screens/edit.dart';
+import 'package:resto_picker/local_db.dart';
+import 'package:flutter_popup_card/flutter_popup_card.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,10 +18,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StreamController<int> _controller = StreamController<int>();
   bool _showFilters = false;
+  late Future<List<String>> _restaurantNames;
+  final LocalDatabase _localDb = LocalDatabase();
 
   String _selectedLocation = 'Select Location';
   String _selectedType = 'Select Type';
   String _selectedDelivery = 'Yes';
+
+  @override
+  void initState() {
+    super.initState();
+    _restaurantNames = _localDb.getRestaurantNames();
+  }
 
   @override
   void dispose() {
@@ -27,13 +39,53 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _spinWheel() {
     final random = Random();
-    _controller.add(random.nextInt(4));
+    _controller.add(random.nextInt(5));
   }
 
   void _toggleFilters() {
     setState(() {
       _showFilters = !_showFilters;
     });
+  }
+
+  void _editScreen() {
+    showPopupCard(
+      context: context,
+      builder: (context) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            minWidth: 300,
+            minHeight: 300,
+          ),
+          child: PopupCard(
+            elevation: 8,
+            color: const Color(0xFFFFF8EE),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Stack(
+              children: [
+                SingleChildScrollView(child: EditScreen()),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      offset: const Offset(0, 70),
+      alignment: Alignment.topCenter,
+      useSafeArea: true,
+      dimBackground: true,
+    );
   }
 
   @override
@@ -59,15 +111,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: 300,
                     height: 300,
-                    child: FortuneWheel(
-                      selected: _controller.stream,
-                      items: const [
-                        FortuneItem(child: Text('Option 1')),
-                        FortuneItem(child: Text('Option 2')),
-                        FortuneItem(child: Text('Option 3')),
-                        FortuneItem(child: Text('Option 4')),
-                      ],
+                    child: FutureBuilder<List<String>>(
+                      future: _restaurantNames,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          final names = snapshot.data!;
+                          return FortuneWheel(
+                            selected: _controller.stream,
+                            items:
+                                names
+                                    .map(
+                                      (name) => FortuneItem(child: Text(name)),
+                                    )
+                                    .toList(),
+                          );
+                        }
+                      },
                     ),
+
+                    // child: FortuneWheel(
+                    //   selected: _controller.stream,
+                    //   items: const [
+                    //     FortuneItem(child: Text('Option 1')),
+                    //     FortuneItem(child: Text('Option 2')),
+                    //     FortuneItem(child: Text('Option 3')),
+                    //     FortuneItem(child: Text('Option 4')),
+                    //   ],
+                    // ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -79,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 20),
                       ElevatedButton(
-                        onPressed: null,
+                        onPressed: _editScreen,
                         child: const Text('EDIT'),
                       ),
                     ],

@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             Positioned.fill(
               child: Center(
-                child: Container(
+                child: SizedBox(
                   width: 200,
                   child: const Text(
                     'RESTO PICKER',

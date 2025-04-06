@@ -128,9 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         child: const Text('EDIT'),
                       ),
+
+                      // UNCOMMENT TO DELETE DATA IN WHEEL
                       // ElevatedButton(
                       //   onPressed: () async {
-                      //     // UNCOMMENT TO DELETE DATA IN WHEEL
+                      //
                       //     await _dbHelper.clearRestosTemporarily();
 
                       //

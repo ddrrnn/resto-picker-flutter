@@ -3,6 +3,9 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../helpers/database_helper.dart';
+import '../dialogs/spin_dialog.dart';
+import '../dialogs/add_resto_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +16,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final StreamController<int> _controller = StreamController<int>();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+  List<String> _restos = [];
   bool _showFilters = false;
 
   String _selectedLocation = 'Select Location';
@@ -20,14 +25,41 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedDelivery = 'Yes';
 
   @override
+  void initState() {
+    super.initState();
+    _loadRestos();
+  }
+
+  @override
   void dispose() {
     _controller.close();
     super.dispose();
   }
 
+  Future<void> _loadRestos() async {
+    final restoData = await _dbHelper.getRestos();
+    setState(() {
+      _restos = restoData.map((e) => e['name'] as String).toList();
+    });
+  }
+
   void _spinWheel() {
-    final random = Random();
-    _controller.add(random.nextInt(4));
+    if (_restos.isNotEmpty) {
+      final random = Random();
+      final selected = random.nextInt(_restos.length);
+      _controller.add(selected);
+
+      //delay for winner dialog
+      Future.delayed(const Duration(seconds: 5), () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            final selectedResto = _restos[selected];
+            return SpinDialog(restoName: selectedResto);
+          },
+        );
+      });
+    }
   }
 
   void _toggleFilters() {
@@ -59,15 +91,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: 300,
                     height: 300,
-                    child: FortuneWheel(
-                      selected: _controller.stream,
-                      items: const [
-                        FortuneItem(child: Text('Option 1')),
-                        FortuneItem(child: Text('Option 2')),
-                        FortuneItem(child: Text('Option 3')),
-                        FortuneItem(child: Text('Option 4')),
-                      ],
-                    ),
+                    child:
+                        _restos.isEmpty
+                            ? const CircularProgressIndicator()
+                            : FortuneWheel(
+                              selected: _controller.stream,
+                              items:
+                                  _restos
+                                      .map(
+                                        (name) =>
+                                            FortuneItem(child: Text(name)),
+                                      )
+                                      .toList(),
+                            ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -79,15 +115,51 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 20),
                       ElevatedButton(
-                        onPressed: null,
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AddRestaurantDialog(
+                                onRestaurantAdded:
+                                    _loadRestos, // Pass the callback
+                              );
+                            },
+                          );
+                        },
                         child: const Text('EDIT'),
                       ),
+                      // ElevatedButton(
+                      //   onPressed: () async {
+                      //     // UNCOMMENT TO DELETE DATA IN WHEEL
+                      //     await _dbHelper.clearRestosTemporarily();
+
+                      //
+                      //     await _dbHelper.insertRestos([
+                      //       'Restaurant A',
+                      //       'Restaurant B',
+                      //       'Restaurant C',
+                      //       'Restaurant D',
+                      //     ]);
+
+                      //
+                      //     await _loadRestos();
+
+                      //
+                      //     ScaffoldMessenger.of(context).showSnackBar(
+                      //       const SnackBar(
+                      //         content: Text(
+                      //           'Database cleared and repopulated for this session!',
+                      //         ),
+                      //       ),
+                      //     );
+                      //   },
+                      //   child: const Text('Clear and Reset Data'),
+                      // ),
                     ],
                   ),
                 ],
               ),
             ),
-
             Positioned(
               top: 10,
               left: 10,
@@ -123,7 +195,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
             if (_showFilters)
               Positioned(
                 top: 0,
@@ -168,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             const Text('Type: '),
@@ -196,7 +266,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             const Text('Delivery: '),

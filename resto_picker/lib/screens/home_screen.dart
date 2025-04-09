@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:resto_picker/screens/edit.dart';
+import 'package:resto_picker/dialogs/spin_dialog.dart';
 import 'package:resto_picker/local_db.dart';
 import 'package:flutter_popup_card/flutter_popup_card.dart';
 
@@ -16,9 +17,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final StreamController<int> _controller = StreamController<int>();
+  StreamController<int> _controller = StreamController<int>.broadcast();
+  List<String> _restaurantNames = [];
   bool _showFilters = false;
-  late Future<List<String>> _restaurantNames;
+
   final LocalDatabase _localDb = LocalDatabase();
 
   String _selectedLocation = 'Select Location';
@@ -28,7 +30,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _restaurantNames = _localDb.getRestaurantNames();
+    _loadRestaurants(); // Changed from directly assigning _restaurantNames
+  }
+
+  Future<void> _loadRestaurants() async {
+    try {
+      final names = await _localDb.getRestaurantNames();
+      setState(() {
+        _restaurantNames = names;
+        // Recreate controller to ensure fresh stream
+        _controller.close();
+        _controller = StreamController<int>.broadcast();
+      });
+    } catch (e) {
+      //debugging
+      ('Error loading restaurants: $e');
+    }
   }
 
   @override
@@ -38,8 +55,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _spinWheel() {
-    final random = Random();
-    _controller.add(random.nextInt(5));
+    if (_restaurantNames.isNotEmpty) {
+      final random = Random();
+      final selected = random.nextInt(_restaurantNames.length);
+      _controller.add(selected);
+
+      //delay for winner dialog
+      Future.delayed(const Duration(seconds: 5), () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            final selectedResto = _restaurantNames[selected];
+            return SpinDialog(restoName: selectedResto);
+          },
+        );
+      });
+    }
   }
 
   void _toggleFilters() {
@@ -48,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ========== MODIFIED: Added callback and refresh ==========
   void _editScreen() {
     showPopupCard(
       context: context,
@@ -67,12 +99,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Stack(
               children: [
-                SingleChildScrollView(child: EditScreen()),
+                SingleChildScrollView(
+                  child: EditScreen(
+                    onRestaurantUpdated:
+                        _loadRestaurants, // NEW: Added callback
+                  ),
+                ),
                 Positioned(
                   top: 12,
                   right: 12,
                   child: IconButton(
-                    icon: Icon(Icons.close),
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -81,16 +118,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-      offset: const Offset(0, 70),
-      alignment: Alignment.topCenter,
-      useSafeArea: true,
-      dimBackground: true,
-    );
+    ).then((_) => _loadRestaurants()); // NEW: Refresh after popup closes
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFFF8EE),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -111,38 +145,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: 300,
                     height: 300,
-                    child: FutureBuilder<List<String>>(
-                      future: _restaurantNames,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        } else {
-                          final names = snapshot.data!;
-                          return FortuneWheel(
-                            selected: _controller.stream,
-                            items:
-                                names
-                                    .map(
-                                      (name) => FortuneItem(child: Text(name)),
-                                    )
-                                    .toList(),
-                          );
-                        }
-                      },
-                    ),
+                    child:
+                        _restaurantNames.isEmpty
+                            ? const CircularProgressIndicator()
+                            : FortuneWheel(
+                              selected: _controller.stream,
 
-                    // child: FortuneWheel(
-                    //   selected: _controller.stream,
-                    //   items: const [
-                    //     FortuneItem(child: Text('Option 1')),
-                    //     FortuneItem(child: Text('Option 2')),
-                    //     FortuneItem(child: Text('Option 3')),
-                    //     FortuneItem(child: Text('Option 4')),
-                    //   ],
-                    // ),
+                              items:
+                                  _restaurantNames
+                                      .map(
+                                        (name) => FortuneItem(
+                                          child: Text(name),
+                                          style: FortuneItemStyle(
+                                            color:
+                                                Colors
+                                                    .primaries[_restaurantNames
+                                                        .indexOf(name) %
+                                                    Colors.primaries.length],
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -153,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Text('SPIN'),
                       ),
                       const SizedBox(width: 20),
+
                       ElevatedButton(
                         onPressed: _editScreen,
                         child: const Text('EDIT'),

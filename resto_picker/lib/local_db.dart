@@ -1,10 +1,14 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-Database? _database;
-
 class LocalDatabase {
+  static final LocalDatabase _instance = LocalDatabase._internal();
+  factory LocalDatabase() => _instance;
+
+  static Database? _database;
   static const String _tableName = 'restaurants';
+
+  LocalDatabase._internal();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -15,7 +19,21 @@ class LocalDatabase {
   Future<Database> _initializeDB(String filepath) async {
     final dbpath = await getDatabasesPath();
     final path = join(dbpath, filepath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+
+    // Delete existing database if you want to force recreation
+    // await deleteDatabase(path);
+
+    return await openDatabase(
+      path,
+      version: 2, // Increment version number
+      onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('DROP TABLE IF EXISTS $_tableName');
+          await _createDB(db, newVersion);
+        }
+      },
+    );
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -23,42 +41,20 @@ class LocalDatabase {
       CREATE TABLE $_tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        address TEXT NOT NULL,
         menu TEXT NOT NULL
       )
     ''');
 
-    // Insert initial 5 restaurants
     await _insertInitialRestaurants(db);
   }
 
   Future<void> _insertInitialRestaurants(Database db) async {
     final restaurants = [
-      {
-        'name': 'Vineyard',
-        'address': '123 Main St, City',
-        'menu': 'Pizza, Pasta, Salad',
-      },
-      {
-        'name': 'Burger Palace',
-        'address': '456 Oak Ave, Town',
-        'menu': 'Burgers, Fries, Shakes',
-      },
-      {
-        'name': 'Sushi World',
-        'address': '789 Pine Rd, Village',
-        'menu': 'Sushi, Sashimi, Tempura',
-      },
-      {
-        'name': 'Taco Fiesta',
-        'address': '321 Elm Blvd, District',
-        'menu': 'Tacos, Burritos, Quesadillas',
-      },
-      {
-        'name': 'Pasta Heaven',
-        'address': '654 Maple Ln, Borough',
-        'menu': 'Spaghetti, Lasagna, Ravioli',
-      },
+      {'name': 'Vineyard', 'menu': 'Pizza, Pasta, Salad'},
+      {'name': 'Burger Palace', 'menu': 'Burgers, Fries, Shakes'},
+      {'name': 'Sushi World', 'menu': 'Sushi, Sashimi, Tempura'},
+      {'name': 'Taco Fiesta', 'menu': 'Tacos, Burritos, Quesadillas'},
+      {'name': 'Pasta Heaven', 'menu': 'Spaghetti, Lasagna, Ravioli'},
     ];
 
     for (final restaurant in restaurants) {
@@ -66,15 +62,35 @@ class LocalDatabase {
     }
   }
 
+  Future<void> insertResto(String name, String menu) async {
+    final db = await database;
+    await db.insert(_tableName, {'name': name, 'menu': menu});
+  }
+
   Future<List<Map<String, dynamic>>> getAllRestaurants() async {
     final db = await database;
     return await db.query(_tableName);
   }
 
-  // fetch restaurants names for wheel and edit
   Future<List<String>> getRestaurantNames() async {
     final db = await database;
     final allnames = await db.query(_tableName, columns: ['name']);
     return allnames.map((e) => e['name'] as String).toList();
+  }
+
+  Future<int> deleteRestaurantById(int id) async {
+    final db = await database;
+    return await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
+  }
+
+  // update resto when user edited it.
+  Future<void> updateResto(int id, String name, String menu) async {
+    final db = await database;
+    await db.update(
+      _tableName,
+      {'name': name, 'menu': menu},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

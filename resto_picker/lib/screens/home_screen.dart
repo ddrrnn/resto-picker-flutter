@@ -3,9 +3,11 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../helpers/database_helper.dart';
-import '../dialogs/spin_dialog.dart';
-import '../dialogs/add_resto_dialog.dart';
+
+import 'package:resto_picker/screens/edit.dart';
+import 'package:resto_picker/dialogs/spin_dialog.dart';
+import 'package:resto_picker/local_db.dart';
+import 'package:flutter_popup_card/flutter_popup_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,10 +17,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final StreamController<int> _controller = StreamController<int>();
-  final DatabaseHelper _dbHelper = DatabaseHelper();
-  List<String> _restos = [];
+  StreamController<int> _controller = StreamController<int>.broadcast();
+  List<String> _restaurantNames = [];
   bool _showFilters = false;
+
+  final LocalDatabase _localDb = LocalDatabase();
 
   String _selectedLocation = 'Select Location';
   String _selectedType = 'Select Type';
@@ -27,7 +30,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRestos();
+    _loadRestaurants(); // Changed from directly assigning _restaurantNames
+  }
+
+  Future<void> _loadRestaurants() async {
+    try {
+      final names = await _localDb.getRestaurantNames();
+      setState(() {
+        _restaurantNames = names;
+        // Recreate controller to ensure fresh stream
+        _controller.close();
+        _controller = StreamController<int>.broadcast();
+      });
+    } catch (e) {
+      //debugging
+      ('Error loading restaurants: $e');
+    }
   }
 
   @override
@@ -36,17 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadRestos() async {
-    final restoData = await _dbHelper.getRestos();
-    setState(() {
-      _restos = restoData.map((e) => e['name'] as String).toList();
-    });
-  }
-
   void _spinWheel() {
-    if (_restos.isNotEmpty) {
+    if (_restaurantNames.isNotEmpty) {
       final random = Random();
-      final selected = random.nextInt(_restos.length);
+      final selected = random.nextInt(_restaurantNames.length);
       _controller.add(selected);
 
       //delay for winner dialog
@@ -54,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         showDialog(
           context: context,
           builder: (context) {
-            final selectedResto = _restos[selected];
+            final selectedResto = _restaurantNames[selected];
             return SpinDialog(restoName: selectedResto);
           },
         );
@@ -68,9 +79,52 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ========== MODIFIED: Added callback and refresh ==========
+  void _editScreen() {
+    showPopupCard(
+      context: context,
+      builder: (context) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            minWidth: 300,
+            minHeight: 300,
+          ),
+          child: PopupCard(
+            elevation: 8,
+            color: const Color(0xFFFFF8EE),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  child: EditScreen(
+                    onRestaurantUpdated:
+                        _loadRestaurants, // NEW: Added callback
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ).then((_) => _loadRestaurants()); // NEW: Refresh after popup closes
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFFF8EE),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -92,15 +146,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 300,
                     height: 300,
                     child:
-                        _restos.isEmpty
+                        _restaurantNames.isEmpty
                             ? const CircularProgressIndicator()
                             : FortuneWheel(
                               selected: _controller.stream,
+
                               items:
-                                  _restos
+                                  _restaurantNames
                                       .map(
-                                        (name) =>
-                                            FortuneItem(child: Text(name)),
+                                        (name) => FortuneItem(
+                                          child: Text(name),
+                                          style: FortuneItemStyle(
+                                            color:
+                                                Colors
+                                                    .primaries[_restaurantNames
+                                                        .indexOf(name) %
+                                                    Colors.primaries.length],
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
                                       )
                                       .toList(),
                             ),
@@ -114,52 +181,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Text('SPIN'),
                       ),
                       const SizedBox(width: 20),
+
                       ElevatedButton(
-                        onPressed: () async {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AddRestaurantDialog(
-                                onRestaurantAdded:
-                                    _loadRestos, // Pass the callback
-                              );
-                            },
-                          );
-                        },
+                        onPressed: _editScreen,
                         child: const Text('EDIT'),
                       ),
-                      // ElevatedButton(
-                      //   onPressed: () async {
-                      //     // UNCOMMENT TO DELETE DATA IN WHEEL
-                      //     await _dbHelper.clearRestosTemporarily();
-
-                      //
-                      //     await _dbHelper.insertRestos([
-                      //       'Restaurant A',
-                      //       'Restaurant B',
-                      //       'Restaurant C',
-                      //       'Restaurant D',
-                      //     ]);
-
-                      //
-                      //     await _loadRestos();
-
-                      //
-                      //     ScaffoldMessenger.of(context).showSnackBar(
-                      //       const SnackBar(
-                      //         content: Text(
-                      //           'Database cleared and repopulated for this session!',
-                      //         ),
-                      //       ),
-                      //     );
-                      //   },
-                      //   child: const Text('Clear and Reset Data'),
-                      // ),
                     ],
                   ),
                 ],
               ),
             ),
+
             Positioned(
               top: 10,
               left: 10,
@@ -195,6 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+
             if (_showFilters)
               Positioned(
                 top: 0,
@@ -239,6 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             const Text('Type: '),
@@ -266,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
+
                         Row(
                           children: [
                             const Text('Delivery: '),

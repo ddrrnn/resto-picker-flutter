@@ -3,7 +3,6 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
-
 import 'package:resto_picker/screens/edit.dart';
 import 'package:resto_picker/dialogs/spin_dialog.dart';
 import 'package:resto_picker/local_db.dart';
@@ -219,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     SvgPicture.asset(
-                      'lib/assets/filter_svg.svg',
+                      'lib/assets/slider.svg',
                       width: 24,
                       height: 24,
                     ),

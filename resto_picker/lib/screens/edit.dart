@@ -4,7 +4,12 @@ import 'package:resto_picker/screens/add_resto.dart';
 
 class EditScreen extends StatefulWidget {
   final VoidCallback? onRestaurantUpdated;
-  const EditScreen({super.key, this.onRestaurantUpdated});
+  final Function(int, String) onRestaurantDeleted; // Added this callback
+  const EditScreen({
+    super.key,
+    this.onRestaurantUpdated,
+    required this.onRestaurantDeleted, // Required for deletion callback
+  });
 
   @override
   State<EditScreen> createState() => _EditScreenState();
@@ -57,10 +62,25 @@ class _EditScreenState extends State<EditScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('"$name" deleted successfully')),
             );
+            widget.onRestaurantDeleted(
+              id,
+              name,
+            ); // Notify HomeScreen about the deletion
             if (widget.onRestaurantUpdated != null) {
-              widget.onRestaurantUpdated!();
+              widget
+                  .onRestaurantUpdated!(); // Notify parent widget to refresh the list
             }
-            _refreshRestaurants();
+            // Manually trigger a refresh
+            setState(() {
+              _restaurants = _localDb.getAllRestaurants();
+            });
+          }
+        } else {
+          // Handle case when no rows were deleted
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Restaurant not found.')),
+            );
           }
         }
       } catch (e) {
@@ -85,7 +105,7 @@ class _EditScreenState extends State<EditScreen> {
                   widget.onRestaurantUpdated!();
                 }
                 _refreshRestaurants();
-                Navigator.pop(context);
+                Navigator.pop(context); // Close the dialog
               },
               initialName: restaurant['name'] as String,
               initialMenu: restaurant['menu'] as String,
@@ -150,7 +170,7 @@ class _EditScreenState extends State<EditScreen> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(),
+                                  color: Colors.black.withOpacity(0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -201,7 +221,7 @@ class _EditScreenState extends State<EditScreen> {
                               widget.onRestaurantUpdated!();
                             }
                             _refreshRestaurants();
-                            Navigator.pop(context);
+                            Navigator.pop(context); // Close the dialog
                           },
                         ),
                       ),

@@ -26,8 +26,13 @@ class _AddRestoState extends State<AddResto> {
     TextEditingController(),
   ];
   final LocalDatabase _localDb = LocalDatabase();
-  bool _isSaving = false;
   final ScrollController _scrollController = ScrollController();
+
+  String? _selectedDelivery;
+  String? _selectedMeal;
+  String? _selectedCuisine;
+  String? _selectedLocation;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -39,6 +44,12 @@ class _AddRestoState extends State<AddResto> {
         _menuControllers.add(TextEditingController(text: item));
       });
     }
+
+    // Set defaults
+    _selectedDelivery = 'Yes';
+    _selectedMeal = 'Breakfast';
+    _selectedCuisine = 'Filipino';
+    _selectedLocation = 'Banwa';
   }
 
   @override
@@ -66,9 +77,7 @@ class _AddRestoState extends State<AddResto> {
 
   void _removeMenuField(int index) {
     if (_menuControllers.length > 1) {
-      setState(() {
-        _menuControllers.removeAt(index);
-      });
+      setState(() => _menuControllers.removeAt(index));
     }
   }
 
@@ -77,27 +86,39 @@ class _AddRestoState extends State<AddResto> {
     setState(() => _isSaving = true);
 
     try {
+      final name = _nameController.text.trim();
       final menuItems = _menuControllers
           .where((controller) => controller.text.isNotEmpty)
-          .map((controller) => controller.text)
+          .map((controller) => controller.text.trim())
           .join(', ');
 
       if (widget.restaurantId != null) {
-        // Update existing restaurant
+        // Update restaurant if restaurantId is provided
         await _localDb.updateResto(
           widget.restaurantId!,
-          _nameController.text.trim(),
-          menuItems.trim(),
+          name,
+          menuItems,
+          _selectedDelivery!,
+          _selectedMeal!,
+          _selectedCuisine!,
+          _selectedLocation!,
         );
       } else {
-        // Create new restaurant
+        // Insert a new restaurant
         await _localDb.insertResto(
-          _nameController.text.trim(),
-          menuItems.trim(),
+          name,
+          menuItems,
+          _selectedDelivery!,
+          _selectedMeal!,
+          _selectedCuisine!,
+          _selectedLocation!,
         );
       }
 
+      // ✅ Notify parent widget to refresh list
       widget.onRestaurantAdded?.call();
+
+      // ✅ Close dialog after saving
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
@@ -108,6 +129,33 @@ class _AddRestoState extends State<AddResto> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required String? value,
+    required List<T> options,
+    required void Function(T?) onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value as T,
+      items:
+          options.map((T option) {
+            return DropdownMenuItem<T>(
+              value: option,
+              child: Text(option.toString()),
+            );
+          }).toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 18,
+        ),
+      ),
+    );
   }
 
   @override
@@ -132,7 +180,6 @@ class _AddRestoState extends State<AddResto> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -154,7 +201,7 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Resto Name Field
+                  // Name Field
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
@@ -175,53 +222,51 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Menu Section Header
                   const Text(
                     'Please recommend resto menu',
                     style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 10),
 
-                  // Menu Items List
+                  // Menu Fields
                   Column(
-                    children: [
-                      ..._menuControllers.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final controller = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: controller,
-                                  decoration: InputDecoration(
-                                    labelText: 'Menu name',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 15,
-                                      vertical: 18,
+                    children:
+                        _menuControllers.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final controller = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: controller,
+                                    decoration: InputDecoration(
+                                      labelText: 'Menu name',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 15,
+                                            vertical: 18,
+                                          ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              if (_menuControllers.length > 1)
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () => _removeMenuField(index),
-                                  padding: const EdgeInsets.only(left: 10),
-                                ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ],
+                                if (_menuControllers.length > 1)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
+                                    onPressed: () => _removeMenuField(index),
+                                    padding: const EdgeInsets.only(left: 10),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                   ),
-                  const SizedBox(height: 10),
-
-                  // Add More Button
                   TextButton(
                     onPressed: _addMenuField,
                     style: TextButton.styleFrom(
@@ -232,6 +277,42 @@ class _AddRestoState extends State<AddResto> {
                       '+ Add More',
                       style: TextStyle(fontSize: 16, color: Colors.black),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Dropdowns
+                  _buildDropdown<String>(
+                    label: 'Delivery',
+                    value: _selectedDelivery,
+                    options: ['Yes', 'No'],
+                    onChanged:
+                        (value) => setState(() => _selectedDelivery = value),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _buildDropdown<String>(
+                    label: 'Meal',
+                    value: _selectedMeal,
+                    options: ['Breakfast', 'Lunch', 'Dinner'],
+                    onChanged: (value) => setState(() => _selectedMeal = value),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _buildDropdown<String>(
+                    label: 'Cuisine',
+                    value: _selectedCuisine,
+                    options: ['Filipino', 'Korean', 'Japanese'],
+                    onChanged:
+                        (value) => setState(() => _selectedCuisine = value),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _buildDropdown<String>(
+                    label: 'Location',
+                    value: _selectedLocation,
+                    options: ['Banwa', 'UPV', 'Hollywood'],
+                    onChanged:
+                        (value) => setState(() => _selectedLocation = value),
                   ),
                   const SizedBox(height: 20),
 

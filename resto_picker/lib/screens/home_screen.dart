@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'dart:math';
 import 'dart:async';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:resto_picker/screens/edit.dart';
 import 'package:resto_picker/dialogs/spin_dialog.dart';
 import 'package:resto_picker/local_db.dart';
@@ -29,22 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRestaurants(); // Changed from directly assigning _restaurantNames
+    _loadRestaurants();
   }
 
   Future<void> _loadRestaurants() async {
-    try {
-      final names = await _localDb.getRestaurantNames();
-      setState(() {
-        _restaurantNames = names;
-        // Recreate controller to ensure fresh stream
-        _controller.close();
-        _controller = StreamController<int>.broadcast();
-      });
-    } catch (e) {
-      //debugging
-      ('Error loading restaurants: $e');
-    }
+    final data = await _localDb.getAllRestaurants();
+    setState(() {
+      _restaurantNames = data.map((e) => e['name'] as String).toList();
+    });
   }
 
   @override
@@ -53,22 +44,37 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Key _wheelKey = UniqueKey();
+
   void _spinWheel() {
     if (_restaurantNames.isNotEmpty) {
       final random = Random();
       final selected = random.nextInt(_restaurantNames.length);
-      _controller.add(selected);
 
-      //delay for winner dialog
-      Future.delayed(const Duration(seconds: 5), () {
-        showDialog(
-          context: context,
-          builder: (context) {
-            final selectedResto = _restaurantNames[selected];
-            return SpinDialog(restoName: selectedResto);
-          },
-        );
-      });
+      // Ensure the selected index is within the valid range.
+      if (selected >= 0 && selected < _restaurantNames.length) {
+        _controller.add(selected);
+        setState(() {
+          _wheelKey = UniqueKey();
+        });
+
+        print("Selected restaurant index: $selected");
+        print("Selected restaurant: ${_restaurantNames[selected]}");
+
+        Future.delayed(const Duration(seconds: 5), () {
+          showDialog(
+            context: context,
+            builder: (context) {
+              final selectedResto = _restaurantNames[selected];
+              return SpinDialog(restoName: selectedResto);
+            },
+          );
+        });
+      } else {
+        print("Error: Invalid restaurant index");
+      }
+    } else {
+      print("Error: No restaurants available to spin");
     }
   }
 
@@ -78,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ========== MODIFIED: Added callback and refresh ==========
   void _editScreen() {
     showPopupCard(
       context: context,
@@ -100,8 +105,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 SingleChildScrollView(
                   child: EditScreen(
-                    onRestaurantUpdated:
-                        _loadRestaurants, // NEW: Added callback
+                    onRestaurantUpdated: _loadRestaurants,
+                    onRestaurantDeleted: (id, name) {
+                      // Handle restaurant deletion callback
+                      setState(() {
+                        _restaurantNames.removeWhere(
+                          (restaurant) => restaurant == name,
+                        );
+                      });
+                    },
                   ),
                 ),
                 Positioned(
@@ -117,7 +129,21 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    ).then((_) => _loadRestaurants()); // NEW: Refresh after popup closes
+    ).then((_) => _loadRestaurants());
+  }
+
+  Color _getColorForIndex(int index) {
+    final colors = [
+      Color(0xFFA5EAD8), // A5EAD8
+      Color(0xFFFDE648), // FDE648
+      Color(0xFFA467E8), // A467E8
+      Color(0xFFF566BE), // F566BE
+      Color(0xFF00C3F9), // 00C3F9
+      Color(0xFFBC6BB7), // BC6BB7
+    ];
+
+    // Ensure that we cycle through the colors if we have more items than colors
+    return colors[index % colors.length];
   }
 
   @override
@@ -149,40 +175,83 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? const CircularProgressIndicator()
                             : FortuneWheel(
                               selected: _controller.stream,
-
                               items:
                                   _restaurantNames
+                                      .asMap()
                                       .map(
-                                        (name) => FortuneItem(
-                                          child: Text(name),
-                                          style: FortuneItemStyle(
-                                            color:
-                                                Colors
-                                                    .primaries[_restaurantNames
-                                                        .indexOf(name) %
-                                                    Colors.primaries.length],
-                                            textStyle: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                        (index, name) => MapEntry(
+                                          index,
+                                          FortuneItem(
+                                            child: Text(
+                                              name,
+                                              style: const TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .bold, // Make the text bold
+                                                color:
+                                                    Colors
+                                                        .white, // Set text color to white
+                                              ),
+                                            ),
+                                            style: FortuneItemStyle(
+                                              color: _getColorForIndex(
+                                                index,
+                                              ), // Assign a fixed color based on index
+                                              borderWidth:
+                                                  0, // Remove the border width
+                                              borderColor:
+                                                  Colors
+                                                      .transparent, // Remove border color
                                             ),
                                           ),
                                         ),
                                       )
+                                      .values
                                       .toList(),
                             ),
                   ),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
                     children: [
                       ElevatedButton(
                         onPressed: _spinWheel,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 80,
+                            vertical: 20,
+                          ),
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.black, width: 1),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         child: const Text('SPIN'),
                       ),
-                      const SizedBox(width: 20),
-
+                      const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _editScreen,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 16,
+                          ),
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.black, width: 1),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         child: const Text('EDIT'),
                       ),
                     ],
@@ -206,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white,
                         border: Border.all(
                           color: const Color(0xFFEA3EF7),
-                          width: 3,
+                          width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -217,10 +286,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    SvgPicture.asset(
-                      'lib/assets/slider.svg',
-                      width: 24,
-                      height: 24,
+                    Image.asset(
+                      'lib/assets/fil_svg.png',
+                      width: 50,
+                      height: 50,
                     ),
                   ],
                 ),

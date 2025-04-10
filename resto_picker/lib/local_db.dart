@@ -20,12 +20,12 @@ class LocalDatabase {
     final dbpath = await getDatabasesPath();
     final path = join(dbpath, filepath);
 
-    // Delete existing database if you want to force recreation
+    // Uncomment if you want to delete DB and recreate
     // await deleteDatabase(path);
 
     return await openDatabase(
       path,
-      version: 2, // Increment version number
+      version: 2, // Incremented version
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -41,7 +41,11 @@ class LocalDatabase {
       CREATE TABLE $_tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        menu TEXT NOT NULL
+        menu TEXT NOT NULL,
+        delivery TEXT NOT NULL,
+        meal TEXT NOT NULL,
+        cuisine TEXT NOT NULL,
+        location TEXT NOT NULL
       )
     ''');
 
@@ -50,11 +54,47 @@ class LocalDatabase {
 
   Future<void> _insertInitialRestaurants(Database db) async {
     final restaurants = [
-      {'name': 'Vineyard', 'menu': 'Pizza, Pasta, Salad'},
-      {'name': 'Burger Palace', 'menu': 'Burgers, Fries, Shakes'},
-      {'name': 'Sushi World', 'menu': 'Sushi, Sashimi, Tempura'},
-      {'name': 'Taco Fiesta', 'menu': 'Tacos, Burritos, Quesadillas'},
-      {'name': 'Pasta Heaven', 'menu': 'Spaghetti, Lasagna, Ravioli'},
+      {
+        'name': 'Vineyard',
+        'menu': 'Pizza, Pasta, Salad, Tenderloin, Lumpia, Sinigang, Borgz',
+        'delivery': 'yes',
+        'meal': 'lunch',
+        'cuisine': 'filipino',
+        'location': 'banwa',
+      },
+      {
+        'name': 'Hello Burger',
+        'menu':
+            'Kamusta Burger, Fries, Namaste Burger, Bonjour Burger, Ciao Burger, Ohayo Burger',
+        'delivery': 'no',
+        'meal': 'dinner',
+        'cuisine': 'korean',
+        'location': 'upv',
+      },
+      {
+        'name': 'Sulu Garden',
+        'menu': 'Sushi, Sashimi, Tempura, Gyudon, Ramen, Udon',
+        'delivery': 'yes',
+        'meal': 'lunch',
+        'cuisine': 'japanese',
+        'location': 'hollywood',
+      },
+      {
+        'name': 'Pickers',
+        'menu': 'Tacos, Burritos, Quesadillas, Nachos, Burritos, Chimichangas',
+        'delivery': 'no',
+        'meal': 'breakfast',
+        'cuisine': 'mexican',
+        'location': 'upv',
+      },
+      {
+        'name': 'El Garaje',
+        'menu': 'Spaghetti, Aglio e Olio, Carbonara, Lasagna, Ravioli',
+        'delivery': 'yes',
+        'meal': 'dinner',
+        'cuisine': 'italian',
+        'location': 'banwa',
+      },
     ];
 
     for (final restaurant in restaurants) {
@@ -62,9 +102,23 @@ class LocalDatabase {
     }
   }
 
-  Future<void> insertResto(String name, String menu) async {
+  Future<void> insertResto(
+    String name,
+    String menu,
+    String delivery,
+    String meal,
+    String cuisine,
+    String location,
+  ) async {
     final db = await database;
-    await db.insert(_tableName, {'name': name, 'menu': menu});
+    await db.insert(_tableName, {
+      'name': name,
+      'menu': menu,
+      'delivery': delivery,
+      'meal': meal,
+      'cuisine': cuisine,
+      'location': location,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getAllRestaurants() async {
@@ -83,12 +137,26 @@ class LocalDatabase {
     return await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
   }
 
-  // update resto when user edited it.
-  Future<void> updateResto(int id, String name, String menu) async {
+  Future<void> updateResto(
+    int id,
+    String name,
+    String menu,
+    String delivery,
+    String meal,
+    String cuisine,
+    String location,
+  ) async {
     final db = await database;
     await db.update(
       _tableName,
-      {'name': name, 'menu': menu},
+      {
+        'name': name,
+        'menu': menu,
+        'delivery': delivery,
+        'meal': meal,
+        'cuisine': cuisine,
+        'location': location,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );

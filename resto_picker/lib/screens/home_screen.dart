@@ -371,52 +371,64 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Back button row
-                          Row(
+                      // added contraints to control page height limit
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.5,
+                      ),
+                      // Enable scrolling in the filter page
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back),
-                                onPressed: _toggleFilters,
+                              // Back button
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.arrow_back),
+                                    onPressed: _toggleFilters,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Filters',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Filters',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                              const SizedBox(height: 16),
+
+                              // Filter dropdowns
+                              ..._filterOptions.keys.map(
+                                (category) => _buildFilterDropdown(category),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Selected filters
+                              if (_selectedFilters.values.any(
+                                (values) => values.isNotEmpty,
+                              ))
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Selected Filters:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _selectedFiltersTag(),
+                                  ],
                                 ),
-                              ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-
-                          // Filter dropdowns
-                          ..._filterOptions.keys.map(
-                            (category) => _buildFilterDropdown(category),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Selected filters
-                          if (_selectedFilters.values.any(
-                            (values) => values.isNotEmpty,
-                          ))
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Selected Filters:',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                _selectedFiltersTag(),
-                              ],
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

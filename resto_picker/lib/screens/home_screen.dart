@@ -65,6 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggleFilters() {
     setState(() {
       _showFilters = !_showFilters;
+      if (!_showFilters) {
+        _applyFilters();
+      }
     });
   }
 

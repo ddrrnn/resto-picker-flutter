@@ -17,13 +17,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   StreamController<int> _controller = StreamController<int>.broadcast();
   List<String> _restaurantNames = [];
-  bool _showFilters = false;
-
   final LocalDatabase _localDb = LocalDatabase();
 
-  String _selectedLocation = 'Select Location';
-  String _selectedType = 'Select Type';
-  String _selectedDelivery = 'Yes';
+  // Different Filter state and options
+  // Dito lang mag add
+  bool _showFilters = false;
+  final Map<String, List<String>> _filterOptions = {
+    'Delivery': ['Yes', 'No'],
+    'Meal': ['Breakfast', 'Lunch', 'Dinner'],
+    'Cuisine': ['Filipino', 'Korean', 'Japanese'],
+    'Location': ['Banwa', 'UPV', 'Hollywood'],
+  };
+  // Store selected Filters used to create tags at the bottom
+  final Map<String, Set<String>> _selectedFilters = {
+    'Delivery': {},
+    'Meal': {},
+    'Cuisine': {},
+    'Location': {},
+  };
 
   @override
   void initState() {
@@ -144,6 +155,63 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Ensure that we cycle through the colors if we have more items than colors
     return colors[index % colors.length];
+  }
+
+  // Store in selectedFilter if user check the item and remove if not
+  void _handleFilter(String category, String value, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedFilters[category]!.add(value);
+      } else {
+        _selectedFilters[category]!.remove(value);
+      }
+    });
+  }
+
+  // For filter tag delete
+  void _removeFilter(String category, String value) {
+    setState(() {
+      _selectedFilters[category]!.remove(value);
+    });
+  }
+
+  Widget _buildFilterDropdown(String category) {
+    return ExpansionTile(
+      title: Text(category),
+      children:
+          _filterOptions[category]!.map((option) {
+            // creates checkboxes
+            return CheckboxListTile(
+              title: Text(option),
+              value: _selectedFilters[category]!.contains(option),
+              onChanged: (bool? value) {
+                // call function to create tag
+                _handleFilter(category, option, value ?? false);
+              },
+            );
+          }).toList(),
+    );
+  }
+
+  // Create EACH filter tag
+  Widget _filterTag(String category, String value) {
+    return Chip(
+      label: Text('$category: $value'),
+      onDeleted: () => _removeFilter(category, value),
+      deleteIcon: const Icon(Icons.close, size: 18),
+    );
+  }
+
+  // creates and displays filter tags at the bottom of the filter dropdowns
+  Widget _selectedFiltersTag() {
+    final chips = <Widget>[];
+    _selectedFilters.forEach((category, values) {
+      for (var value in values) {
+        // add each filter created in the _filtertag
+        chips.add(_filterTag(category, value));
+      }
+    });
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
   }
 
   @override
@@ -296,103 +364,97 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // Filter Page
             if (_showFilters)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        bottom: Radius.circular(20),
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text('Location: '),
-                            DropdownButton<String>(
-                              value: _selectedLocation,
-                              items:
-                                  <String>[
-                                    'Select Location',
-                                    'Banwa',
-                                    'UPV',
-                                    'Hollywood',
-                                  ].map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedLocation = newValue!;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        Row(
-                          children: [
-                            const Text('Type: '),
-                            DropdownButton<String>(
-                              value: _selectedType,
-                              items:
-                                  <String>[
-                                    'Select Type',
-                                    'Local Dish',
-                                    'Korean',
-                                    'Takeout',
-                                    'Lunch',
-                                  ].map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedType = newValue!;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        Row(
-                          children: [
-                            const Text('Delivery: '),
-                            DropdownButton<String>(
-                              value: _selectedDelivery,
-                              items:
-                                  <String>['Yes', 'No'].map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedDelivery = newValue!;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+              Stack(
+                children: [
+                  // prevents taps outside the filter page
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () {}, // Empty onTap prevents closing
+                      behavior: HitTestBehavior.opaque,
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(20),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      // added contraints to control page height limit
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.5,
+                      ),
+                      // Enable scrolling in the filter page
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Back button
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.arrow_back),
+                                    onPressed: _toggleFilters,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Filters',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Filter dropdowns
+                              ..._filterOptions.keys.map(
+                                (category) => _buildFilterDropdown(category),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Selected filters
+                              if (_selectedFilters.values.any(
+                                (values) => values.isNotEmpty,
+                              ))
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Selected Filters:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _selectedFiltersTag(),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

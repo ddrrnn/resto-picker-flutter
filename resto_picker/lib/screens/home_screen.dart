@@ -15,10 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Wheel controller and data
   StreamController<int> _controller = StreamController<int>.broadcast();
   List<String> _restaurantNames = [];
-  Key _wheelKey = UniqueKey();
   final LocalDatabase _localDb = LocalDatabase();
 
   // Different Filter state and options
@@ -57,25 +55,37 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Key _wheelKey = UniqueKey();
+
   void _spinWheel() {
     if (_restaurantNames.isNotEmpty) {
       final random = Random();
       final selected = random.nextInt(_restaurantNames.length);
 
+      // Ensure the selected index is within the valid range.
       if (selected >= 0 && selected < _restaurantNames.length) {
         _controller.add(selected);
         setState(() {
           _wheelKey = UniqueKey();
         });
 
+        print("Selected restaurant index: $selected");
+        print("Selected restaurant: ${_restaurantNames[selected]}");
+
         Future.delayed(const Duration(seconds: 5), () {
           showDialog(
             context: context,
-            builder:
-                (context) => SpinDialog(restoName: _restaurantNames[selected]),
+            builder: (context) {
+              final selectedResto = _restaurantNames[selected];
+              return SpinDialog(restoName: selectedResto);
+            },
           );
         });
+      } else {
+        print("Error: Invalid restaurant index");
       }
+    } else {
+      print("Error: No restaurants available to spin");
     }
   }
 
@@ -93,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.9,
             maxHeight: MediaQuery.of(context).size.height * 0.8,
+            minWidth: 300,
+            minHeight: 300,
           ),
           child: PopupCard(
             elevation: 8,
@@ -106,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: EditScreen(
                     onRestaurantUpdated: _loadRestaurants,
                     onRestaurantDeleted: (id, name) {
+                      // Handle restaurant deletion callback
                       setState(() {
                         _restaurantNames.removeWhere(
                           (restaurant) => restaurant == name,
@@ -132,13 +145,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Color _getColorForIndex(int index) {
     final colors = [
-      const Color(0xFFA5EAD8),
-      const Color(0xFFFDE648),
-      const Color(0xFFA467E8),
-      const Color(0xFFF566BE),
-      const Color(0xFF00C3F9),
-      const Color(0xFFBC6BB7),
+      Color(0xFFA5EAD8), // A5EAD8
+      Color(0xFFFDE648), // FDE648
+      Color(0xFFA467E8), // A467E8
+      Color(0xFFF566BE), // F566BE
+      Color(0xFF00C3F9), // 00C3F9
+      Color(0xFFBC6BB7), // BC6BB7
     ];
+
+    // Ensure that we cycle through the colors if we have more items than colors
     return colors[index % colors.length];
   }
 
@@ -215,7 +230,6 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         child: Stack(
           children: [
-            // Main content
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -228,30 +242,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         _restaurantNames.isEmpty
                             ? const CircularProgressIndicator()
                             : FortuneWheel(
-                              key: _wheelKey,
                               selected: _controller.stream,
                               items:
                                   _restaurantNames
                                       .asMap()
-                                      .map((index, name) {
-                                        return MapEntry(
+                                      .map(
+                                        (index, name) => MapEntry(
                                           index,
                                           FortuneItem(
                                             child: Text(
                                               name,
                                               style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                                                fontWeight:
+                                                    FontWeight
+                                                        .bold, // Make the text bold
+                                                color:
+                                                    Colors
+                                                        .white, // Set text color to white
                                               ),
                                             ),
                                             style: FortuneItemStyle(
-                                              color: _getColorForIndex(index),
-                                              borderWidth: 0,
-                                              borderColor: Colors.transparent,
+                                              color: _getColorForIndex(
+                                                index,
+                                              ), // Assign a fixed color based on index
+                                              borderWidth:
+                                                  0, // Remove the border width
+                                              borderColor:
+                                                  Colors
+                                                      .transparent, // Remove border color
                                             ),
                                           ),
-                                        );
-                                      })
+                                        ),
+                                      )
                                       .values
                                       .toList(),
                             ),
@@ -323,11 +345,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: const Color(0xFFEA3EF7),
                           width: 2,
                         ),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x33000000),
+                            color: const Color(0x33000000),
                             blurRadius: 4,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),

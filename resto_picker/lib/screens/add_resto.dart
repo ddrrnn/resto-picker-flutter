@@ -46,7 +46,7 @@ class _AddRestoState extends State<AddResto> {
       });
     }
 
-    _selectedDelivery = {};
+    _selectedDelivery = {}; //default
     _selectedMeal = {};
     _selectedCuisine = {};
     _selectedLocation = {};

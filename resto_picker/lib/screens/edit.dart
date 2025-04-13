@@ -1,9 +1,21 @@
 // ignore_for_file: empty_statements
 
+/* 
+This file implements the restaurant editing screen where users can:
+- View all restaurants
+- Edit existing restaurants
+- Delete restaurants
+- Add new restaurants
+
+*/
 import 'package:flutter/material.dart';
 import 'package:resto_picker/local_db.dart';
 import 'package:resto_picker/screens/add_resto.dart';
 
+/* 
+Screen for managing restaurants (edit, delete, add)
+
+*/
 class EditScreen extends StatefulWidget {
   final VoidCallback? onRestaurantUpdated;
   final Function(int, String) onRestaurantDeleted; // Added this callback
@@ -20,6 +32,7 @@ class EditScreen extends StatefulWidget {
   State<EditScreen> createState() => _EditScreenState();
 }
 
+// Manages restaurants data and UI
 class _EditScreenState extends State<EditScreen> {
   late Future<List<Map<String, dynamic>>> _restaurants;
   final LocalDatabase _localDb = LocalDatabase();
@@ -30,24 +43,30 @@ class _EditScreenState extends State<EditScreen> {
     _refreshRestaurants();
   }
 
+  // refreshes the resto list from the dataase
   void _refreshRestaurants() {
     setState(() {
       _restaurants = _localDb.getAllRestaurants();
     });
   }
 
+  // shows modal dialog to confirm deletion of a resto
   Future<void> _deleteRestaurant(int id, String name) async {
+    // determines if resto will be deleted or not
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder:
+          // shows an alert dialog
           (context) => AlertDialog(
             title: const Text('Delete Restaurant'),
             content: Text('Are you sure you want to delete "$name"?'),
             actions: [
+              // Cancel Buton
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('Cancel'),
               ),
+              // Delete Button
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
                 child: const Text(
@@ -59,14 +78,17 @@ class _EditScreenState extends State<EditScreen> {
           ),
     );
 
+    // if user tap confirm
     if (shouldDelete ?? false) {
       try {
         final rowsDeleted = await _localDb.deleteRestaurantById(id);
         if (rowsDeleted > 0) {
           if (mounted) {
+            // show success message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('"$name" deleted successfully')),
             );
+            // notify parent widgets
             widget.onRestaurantDeleted(
               id,
               name,
@@ -89,6 +111,7 @@ class _EditScreenState extends State<EditScreen> {
           }
         }
       } catch (e) {
+        // show error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error deleting restaurant: $e')),
@@ -98,12 +121,16 @@ class _EditScreenState extends State<EditScreen> {
     }
   }
 
+  /*
+  Open edit dialog for a resto
+  */
   void _editRestaurant(Map<String, dynamic> restaurant) {
     showDialog(
       context: context,
       builder:
           (context) => Dialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+            // calls on AddResto from add_resto.dart
             child: AddResto(
               onRestaurantAdded: () {
                 if (widget.onRestaurantUpdated != null) {
@@ -115,7 +142,7 @@ class _EditScreenState extends State<EditScreen> {
               initialName: restaurant['name'] as String,
               initialMenu: restaurant['menu'] as String,
               restaurantId: restaurant['id'] as int,
-              websiteLink: restaurant['website'] as String, // Add this line
+              websiteLink: restaurant['website'] as String,
             ),
           ),
     );
@@ -163,9 +190,8 @@ class _EditScreenState extends State<EditScreen> {
                       itemCount: snapshot.data!.length,
                       itemBuilder: (context, index) {
                         final restaurant = snapshot.data![index];
-                        // final website = restaurant['website'] as String? ?? 'None';
-
                         return GestureDetector(
+                          // if a resto is tap, it opens the edit dialog
                           onTap: () => _editRestaurant(restaurant),
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 10),
@@ -184,6 +210,7 @@ class _EditScreenState extends State<EditScreen> {
                                 ),
                               ],
                             ),
+                            // list of resto names and each have a delete icon
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -194,6 +221,7 @@ class _EditScreenState extends State<EditScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.close),
                                   onPressed:
+                                      // call deleteRestaurant if delete icon is tap
                                       () => _deleteRestaurant(
                                         restaurant['id'] as int,
                                         restaurant['name'] as String,
@@ -213,7 +241,7 @@ class _EditScreenState extends State<EditScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Add Restaurant Button
+            // Builds the "Add Restaurant" button
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -235,6 +263,7 @@ class _EditScreenState extends State<EditScreen> {
                           insetPadding: const EdgeInsets.symmetric(
                             horizontal: 20,
                           ),
+                          // calls AddResto from add_resto.dart
                           child: AddResto(
                             onRestaurantAdded: () {
                               if (widget.onRestaurantUpdated != null) {

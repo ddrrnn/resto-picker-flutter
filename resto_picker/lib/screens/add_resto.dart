@@ -1,6 +1,15 @@
+/*
+This file implements the restaurant addition/editing form with:
+- Restaurant details input
+- Menu item management
+- Category selection
+- Form validation
+*/
+
 import 'package:flutter/material.dart';
 import 'package:resto_picker/local_db.dart';
 
+// Screen for adding or editing restaurant information
 class AddResto extends StatefulWidget {
   final VoidCallback? onRestaurantAdded;
   final String? initialName;
@@ -21,27 +30,35 @@ class AddResto extends StatefulWidget {
   State<AddResto> createState() => _AddRestoState();
 }
 
+// manages form data and validation
 class _AddRestoState extends State<AddResto> {
+  // form key for validation
   final _formKey = GlobalKey<FormState>();
 
+  // controllers for form fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
   final List<TextEditingController> _menuControllers = [
     TextEditingController(),
   ];
+  // database instances
   final LocalDatabase _localDb = LocalDatabase();
+  //scroll controller ffor menu items list
   final ScrollController _scrollController = ScrollController();
 
+  // currently selected categories
   Set<String> _selectedDelivery = {};
   Set<String> _selectedMeal = {};
   Set<String> _selectedCuisine = {};
   Set<String> _selectedLocation = {};
 
+  // loading state
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    // initialize form with existing resto data values if editing
     if (widget.initialName != null) _nameController.text = widget.initialName!;
     if (widget.initialMenu != null) {
       _menuControllers.clear();
@@ -60,6 +77,7 @@ class _AddRestoState extends State<AddResto> {
 
   @override
   void dispose() {
+    // clean up controllers
     _nameController.dispose();
     _scrollController.dispose();
     _websiteController.dispose();
@@ -69,6 +87,7 @@ class _AddRestoState extends State<AddResto> {
     super.dispose();
   }
 
+  // adds a new empty menu item field
   void _addMenuField() {
     setState(() {
       _menuControllers.add(TextEditingController());
@@ -82,12 +101,14 @@ class _AddRestoState extends State<AddResto> {
     });
   }
 
+  // remove a menu item field at a specified index
   void _removeMenuField(int index) {
     if (_menuControllers.length > 1) {
       setState(() => _menuControllers.removeAt(index));
     }
   }
 
+  // validates and save resto data to database
   Future<void> _saveRestaurant() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
@@ -128,10 +149,11 @@ class _AddRestoState extends State<AddResto> {
         );
       }
 
+      // notify parent and close dialog
       widget.onRestaurantAdded?.call();
-
       if (mounted) Navigator.pop(context);
     } catch (e) {
+      // show error message
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -142,32 +164,32 @@ class _AddRestoState extends State<AddResto> {
     }
   }
 
-  Widget _buildDropdown<T>({
-    required String label,
-    required String? value,
-    required List<T> options,
-    required void Function(T?) onChanged,
-  }) {
-    return DropdownButtonFormField<T>(
-      value: value as T,
-      items:
-          options.map((T option) {
-            return DropdownMenuItem<T>(
-              value: option,
-              child: Text(option.toString()),
-            );
-          }).toList(),
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 15,
-          vertical: 18,
-        ),
-      ),
-    );
-  }
+  // Widget _buildDropdown<T>({
+  //   required String label,
+  //   required String? value,
+  //   required List<T> options,
+  //   required void Function(T?) onChanged,
+  // }) {
+  //   return DropdownButtonFormField<T>(
+  //     value: value as T,
+  //     items:
+  //         options.map((T option) {
+  //           return DropdownMenuItem<T>(
+  //             value: option,
+  //             child: Text(option.toString()),
+  //           );
+  //         }).toList(),
+  //     onChanged: onChanged,
+  //     decoration: InputDecoration(
+  //       labelText: label,
+  //       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+  //       contentPadding: const EdgeInsets.symmetric(
+  //         horizontal: 15,
+  //         vertical: 18,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +216,7 @@ class _AddRestoState extends State<AddResto> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // determine if resto exits or not
                       Text(
                         widget.restaurantId != null
                             ? 'EDIT RESTO'
@@ -203,6 +226,7 @@ class _AddRestoState extends State<AddResto> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      // Back Button
                       IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () => Navigator.pop(context),
@@ -227,6 +251,7 @@ class _AddRestoState extends State<AddResto> {
                         vertical: 18,
                       ),
                     ),
+                    // validates if value is null or empty
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a restaurant name';
@@ -264,6 +289,7 @@ class _AddRestoState extends State<AddResto> {
                   // Menu Fields
                   Column(
                     children:
+                        // maps to all resto pre-populate list
                         _menuControllers.asMap().entries.map((entry) {
                           final index = entry.key;
                           final controller = entry.value;
@@ -287,6 +313,7 @@ class _AddRestoState extends State<AddResto> {
                                             vertical: 18,
                                           ),
                                     ),
+                                    // validates if menu field is null or empty
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter a menu item';
@@ -296,6 +323,7 @@ class _AddRestoState extends State<AddResto> {
                                   ),
                                 ),
                                 if (_menuControllers.length > 1)
+                                  // button to remove a menu from a resto
                                   IconButton(
                                     icon: const Icon(
                                       Icons.remove_circle_outline,
@@ -308,6 +336,7 @@ class _AddRestoState extends State<AddResto> {
                           );
                         }).toList(),
                   ),
+                  // Add more menu items button
                   TextButton(
                     onPressed: _addMenuField,
                     style: TextButton.styleFrom(
@@ -483,6 +512,7 @@ class _AddRestoState extends State<AddResto> {
                         _isSaving
                             ? null
                             : () {
+                              // check if there is an empty value on one of the categories
                               if (_selectedDelivery.isEmpty ||
                                   _selectedMeal.isEmpty ||
                                   _selectedCuisine.isEmpty ||

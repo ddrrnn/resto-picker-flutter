@@ -30,14 +30,22 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: Stack(
           children: <Widget>[
-            Center(
-              child: SvgPicture.asset(
-                'lib/assets/rectangle_svg.svg',
-                width: 320,
-                height: 140,
+            Positioned(
+              top: MediaQuery.of(context).size.height / 2 - 220,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SvgPicture.asset(
+                  'lib/assets/rectangle_svg.svg',
+                  width: 320,
+                  height: 140,
+                ),
               ),
             ),
-            Positioned.fill(
+            Positioned(
+              top: MediaQuery.of(context).size.height / 2 - 200,
+              left: 0,
+              right: 0,
               child: Center(
                 child: SizedBox(
                   width: 200,

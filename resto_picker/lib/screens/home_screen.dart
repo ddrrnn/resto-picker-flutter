@@ -18,17 +18,20 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamController<int> _controller = StreamController<int>.broadcast();
   List<String> _restaurantNames = [];
   final LocalDatabase _localDb = LocalDatabase();
+  List<Map<String, dynamic>> _allRestaurants = [];
+  bool _isSpinning = false;
+  bool _dialogShown = false;
 
   // Different Filter state and options
   // Dito lang mag add
   bool _showFilters = false;
   final Map<String, List<String>> _filterOptions = {
-    'Delivery': ['Yes', 'No'],
-    'Meal': ['Breakfast', 'Lunch', 'Dinner'],
-    'Cuisine': ['Filipino', 'Korean', 'Japanese'],
-    'Location': ['Banwa', 'UPV', 'Hollywood'],
+    'Delivery': ['yes', 'no'],
+    'Meal': ['breakfast', 'lunch', 'dinner', 'snacks'],
+    'Cuisine': ['filipino', 'korean', 'japanese', 'italian', 'mexican'],
+    'Location': ['banwa', 'upv', 'hollywood', 'malagyan'],
   };
-  // Store selected Filters used to create tags at the bottom
+
   final Map<String, Set<String>> _selectedFilters = {
     'Delivery': {},
     'Meal': {},
@@ -46,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final data = await _localDb.getAllRestaurants();
     setState(() {
       _restaurantNames = data.map((e) => e['name'] as String).toList();
+      _allRestaurants = data;
+      _applyFilters();
     });
   }
 
@@ -55,43 +60,130 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _applyFilters() {
+    print("Applying filters...");
+
+    setState(() {
+      _restaurantNames =
+          _allRestaurants
+              .where((resto) {
+                for (var category in _selectedFilters.keys) {
+                  final selectedValues = _selectedFilters[category]!;
+
+                  if (selectedValues.isNotEmpty) {
+                    final rawValue =
+                        resto[category.toLowerCase()]?.toString().toLowerCase();
+                    if (rawValue == null) {
+                      print(
+                        "Excluding restaurant ${resto['name']} due to missing $category",
+                      );
+                      return false;
+                    }
+
+                    final restoValues =
+                        rawValue.split(',').map((e) => e.trim()).toSet();
+                    print(
+                      "Checking $category filter: $selectedValues against $restoValues",
+                    );
+
+                    if (!selectedValues.any(
+                      (selected) => restoValues.contains(selected),
+                    )) {
+                      print(
+                        "Excluding restaurant ${resto['name']} due to $category filter",
+                      );
+                      return false;
+                    }
+                  }
+                }
+
+                print("Including restaurant ${resto['name']}");
+                return true;
+              })
+              .map((e) => e['name'] as String)
+              .toList();
+
+      print("Filtered restaurants: $_restaurantNames");
+
+      if (_restaurantNames.isEmpty) {
+        Future.delayed(Duration.zero, () {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text("No restaurants found"),
+                  content: const Text("Try changing your filters."),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("OK"),
+                    ),
+                  ],
+                ),
+          );
+        });
+      }
+    });
+  }
+
   Key _wheelKey = UniqueKey();
 
   void _spinWheel() {
+    _applyFilters();
     if (_restaurantNames.isNotEmpty) {
       final random = Random();
       final selected = random.nextInt(_restaurantNames.length);
 
-      // Ensure the selected index is within the valid range.
-      if (selected >= 0 && selected < _restaurantNames.length) {
-        _controller.add(selected);
+      if (_restaurantNames.isNotEmpty &&
+          _restaurantNames.length >= 2 &&
+          !_isSpinning) {
         setState(() {
-          _wheelKey = UniqueKey();
+          _isSpinning = true;
         });
 
-        print("Selected restaurant index: $selected");
-        print("Selected restaurant: ${_restaurantNames[selected]}");
+        if (selected >= 0 && selected < _restaurantNames.length) {
+          _controller.add(selected);
+          setState(() {
+            _wheelKey = UniqueKey();
+          });
 
-        Future.delayed(const Duration(seconds: 5), () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              final selectedResto = _restaurantNames[selected];
-              return SpinDialog(restoName: selectedResto);
-            },
-          );
-        });
+          print("Selected restaurant index: $selected");
+          print("Selected restaurant: ${_restaurantNames[selected]}");
+
+          Future.delayed(const Duration(seconds: 5), () {
+            setState(() {
+              _isSpinning = false;
+            });
+
+            showDialog(
+              context: context,
+              builder: (context) {
+                final selectedResto = _restaurantNames[selected];
+                return SpinDialog(restoName: selectedResto);
+              },
+            );
+          });
+        } else {
+          print("Error: Invalid restaurant index");
+        }
       } else {
-        print("Error: Invalid restaurant index");
+        print("Error: No restaurants available to spin");
       }
-    } else {
-      print("Error: No restaurants available to spin");
     }
+  }
+
+  bool _isSpinButtonEnabled() {
+    return _restaurantNames.isNotEmpty &&
+        _restaurantNames.length >= 2 &&
+        !_isSpinning;
   }
 
   void _toggleFilters() {
     setState(() {
       _showFilters = !_showFilters;
+      if (!_showFilters) {
+        _applyFilters(); // Apply filters when closing the filter panel
+      }
     });
   }
 
@@ -118,7 +210,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: EditScreen(
                     onRestaurantUpdated: _loadRestaurants,
                     onRestaurantDeleted: (id, name) {
-                      // Handle restaurant deletion callback
                       setState(() {
                         _restaurantNames.removeWhere(
                           (restaurant) => restaurant == name,
@@ -145,15 +236,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Color _getColorForIndex(int index) {
     final colors = [
-      Color(0xFFA5EAD8), // A5EAD8
-      Color(0xFFFDE648), // FDE648
-      Color(0xFFA467E8), // A467E8
-      Color(0xFFF566BE), // F566BE
-      Color(0xFF00C3F9), // 00C3F9
-      Color(0xFFBC6BB7), // BC6BB7
+      Color(0xFFA5EAD8),
+      Color(0xFFFDE648),
+      Color(0xFFA467E8),
+      Color(0xFFF566BE),
+      Color(0xFF00C3F9),
+      Color(0xFFBC6BB7),
     ];
 
-    // Ensure that we cycle through the colors if we have more items than colors
     return colors[index % colors.length];
   }
 
@@ -179,13 +269,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return ExpansionTile(
       title: Text(category),
       children:
+          //CAPITALIZE THE FIRST LETTER OF EACH OPTION
           _filterOptions[category]!.map((option) {
-            // creates checkboxes
+            String capitalizedOption =
+                option[0].toUpperCase() + option.substring(1);
+
             return CheckboxListTile(
-              title: Text(option),
+              title: Text(capitalizedOption),
               value: _selectedFilters[category]!.contains(option),
               onChanged: (bool? value) {
-                // call function to create tag
                 _handleFilter(category, option, value ?? false);
               },
             );
@@ -193,7 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Create EACH filter tag
   Widget _filterTag(String category, String value) {
     return Chip(
       label: Text('$category: $value'),
@@ -202,20 +293,38 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // creates and displays filter tags at the bottom of the filter dropdowns
   Widget _selectedFiltersTag() {
     final chips = <Widget>[];
     _selectedFilters.forEach((category, values) {
       for (var value in values) {
-        // add each filter created in the _filtertag
         chips.add(_filterTag(category, value));
       }
     });
     return Wrap(spacing: 8, runSpacing: 8, children: chips);
   }
 
+  void _showSpinDialog(String restoName) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SpinDialog(restoName: restoName);
+        },
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_restaurantNames.length == 1 && !_dialogShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSpinDialog(_restaurantNames[0]);
+        setState(() {
+          _dialogShown = true;
+        });
+      });
+    }
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFFFF8EE),
@@ -240,7 +349,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 300,
                     child:
                         _restaurantNames.isEmpty
-                            ? const CircularProgressIndicator()
+                            ? Center(
+                              child: Text(
+                                "No restaurants to spin.",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            )
+                            : _restaurantNames.length == 1
+                            ? Center(
+                              child: Text(
+                                "Need at least 2 restaurants to spin!",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            )
                             : FortuneWheel(
                               selected: _controller.stream,
                               items:
@@ -253,23 +380,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                             child: Text(
                                               name,
                                               style: const TextStyle(
-                                                fontWeight:
-                                                    FontWeight
-                                                        .bold, // Make the text bold
-                                                color:
-                                                    Colors
-                                                        .white, // Set text color to white
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
                                               ),
                                             ),
                                             style: FortuneItemStyle(
-                                              color: _getColorForIndex(
-                                                index,
-                                              ), // Assign a fixed color based on index
-                                              borderWidth:
-                                                  0, // Remove the border width
-                                              borderColor:
-                                                  Colors
-                                                      .transparent, // Remove border color
+                                              color: _getColorForIndex(index),
+                                              borderWidth: 0,
+                                              borderColor: Colors.transparent,
                                             ),
                                           ),
                                         ),
@@ -282,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     children: [
                       ElevatedButton(
-                        onPressed: _spinWheel,
+                        onPressed: _isSpinButtonEnabled() ? _spinWheel : null,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 80,
@@ -368,10 +486,12 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_showFilters)
               Stack(
                 children: [
-                  // prevents taps outside the filter page
-                  Positioned.fill(
+                  Positioned(
                     child: GestureDetector(
-                      onTap: () {}, // Empty onTap prevents closing
+                      onTap: () {
+                        _applyFilters();
+                        _toggleFilters();
+                      },
                       behavior: HitTestBehavior.opaque,
                     ),
                   ),

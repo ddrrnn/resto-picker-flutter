@@ -28,10 +28,11 @@ class _AddRestoState extends State<AddResto> {
   final LocalDatabase _localDb = LocalDatabase();
   final ScrollController _scrollController = ScrollController();
 
-  String? _selectedDelivery;
-  String? _selectedMeal;
-  String? _selectedCuisine;
-  String? _selectedLocation;
+  Set<String> _selectedDelivery = {};
+  Set<String> _selectedMeal = {};
+  Set<String> _selectedCuisine = {};
+  Set<String> _selectedLocation = {};
+
   bool _isSaving = false;
 
   @override
@@ -45,11 +46,10 @@ class _AddRestoState extends State<AddResto> {
       });
     }
 
-    // Set defaults
-    _selectedDelivery = 'Yes';
-    _selectedMeal = 'Breakfast';
-    _selectedCuisine = 'Filipino';
-    _selectedLocation = 'Banwa';
+    _selectedDelivery = {'Yes'};
+    _selectedMeal = {'Breakfast'};
+    _selectedCuisine = {'Filipino'};
+    _selectedLocation = {'Banwa'};
   }
 
   @override
@@ -98,27 +98,25 @@ class _AddRestoState extends State<AddResto> {
           widget.restaurantId!,
           name,
           menuItems,
-          _selectedDelivery!,
-          _selectedMeal!,
-          _selectedCuisine!,
-          _selectedLocation!,
+          _selectedDelivery.join(', ').toLowerCase(),
+          _selectedMeal.join(', ').toLowerCase(),
+          _selectedCuisine.join(', ').toLowerCase(),
+          _selectedLocation.join(', ').toLowerCase(),
         );
       } else {
         // Insert a new restaurant
         await _localDb.insertResto(
           name,
           menuItems,
-          _selectedDelivery!,
-          _selectedMeal!,
-          _selectedCuisine!,
-          _selectedLocation!,
+          _selectedDelivery.join(', ').toLowerCase(),
+          _selectedMeal.join(', ').toLowerCase(),
+          _selectedCuisine.join(', ').toLowerCase(),
+          _selectedLocation.join(', ').toLowerCase(),
         );
       }
 
-      // ✅ Notify parent widget to refresh list
       widget.onRestaurantAdded?.call();
 
-      // ✅ Close dialog after saving
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
@@ -280,39 +278,115 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Dropdowns
-                  _buildDropdown<String>(
-                    label: 'Delivery',
-                    value: _selectedDelivery,
-                    options: ['Yes', 'No'],
-                    onChanged:
-                        (value) => setState(() => _selectedDelivery = value),
+                  // Delivery
+                  const Text(
+                    "Delivery",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    children:
+                        ['Yes', 'No'].map((option) {
+                          return FilterChip(
+                            label: Text(option),
+                            selected: _selectedDelivery.contains(option),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedDelivery.add(option);
+                                } else {
+                                  _selectedDelivery.remove(option);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
                   const SizedBox(height: 10),
 
-                  _buildDropdown<String>(
-                    label: 'Meal',
-                    value: _selectedMeal,
-                    options: ['Breakfast', 'Lunch', 'Dinner'],
-                    onChanged: (value) => setState(() => _selectedMeal = value),
+                  // Meal
+                  const Text(
+                    "Meal",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    children:
+                        ['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((
+                          option,
+                        ) {
+                          return FilterChip(
+                            label: Text(option),
+                            selected: _selectedMeal.contains(option),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedMeal.add(option);
+                                } else {
+                                  _selectedMeal.remove(option);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
                   const SizedBox(height: 10),
 
-                  _buildDropdown<String>(
-                    label: 'Cuisine',
-                    value: _selectedCuisine,
-                    options: ['Filipino', 'Korean', 'Japanese'],
-                    onChanged:
-                        (value) => setState(() => _selectedCuisine = value),
+                  // Cuisine
+                  const Text(
+                    "Cuisine",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    children:
+                        [
+                          'Filipino',
+                          'Korean',
+                          'Japanese',
+                          'Italian',
+                          'Mexican',
+                        ].map((option) {
+                          return FilterChip(
+                            label: Text(option),
+                            selected: _selectedCuisine.contains(option),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedCuisine.add(option);
+                                } else {
+                                  _selectedCuisine.remove(option);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
                   const SizedBox(height: 10),
 
-                  _buildDropdown<String>(
-                    label: 'Location',
-                    value: _selectedLocation,
-                    options: ['Banwa', 'UPV', 'Hollywood'],
-                    onChanged:
-                        (value) => setState(() => _selectedLocation = value),
+                  // Location
+                  const Text(
+                    "Location",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Wrap(
+                    spacing: 10,
+                    children:
+                        ['Banwa', 'UPV', 'Hollywood', 'Malagyan'].map((option) {
+                          return FilterChip(
+                            label: Text(option),
+                            selected: _selectedLocation.contains(option),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedLocation.add(option);
+                                } else {
+                                  _selectedLocation.remove(option);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
                   const SizedBox(height: 20),
 

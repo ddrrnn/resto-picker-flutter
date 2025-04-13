@@ -1,3 +1,5 @@
+// ignore_for_file: empty_statements
+
 import 'package:flutter/material.dart';
 import 'package:resto_picker/local_db.dart';
 import 'package:resto_picker/screens/add_resto.dart';
@@ -5,10 +7,13 @@ import 'package:resto_picker/screens/add_resto.dart';
 class EditScreen extends StatefulWidget {
   final VoidCallback? onRestaurantUpdated;
   final Function(int, String) onRestaurantDeleted; // Added this callback
+  final String? websiteLink;
+
   const EditScreen({
     super.key,
     this.onRestaurantUpdated,
     required this.onRestaurantDeleted, // Required for deletion callback
+    this.websiteLink,
   });
 
   @override
@@ -109,7 +114,8 @@ class _EditScreenState extends State<EditScreen> {
               },
               initialName: restaurant['name'] as String,
               initialMenu: restaurant['menu'] as String,
-              restaurantId: restaurant['id'] as int, // Add this line
+              restaurantId: restaurant['id'] as int,
+              websiteLink: restaurant['website'] as String, // Add this line
             ),
           ),
     );
@@ -135,7 +141,7 @@ class _EditScreenState extends State<EditScreen> {
           children: [
             // Header
             const Text(
-              'SPIN',
+              'RESTOS',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -157,6 +163,8 @@ class _EditScreenState extends State<EditScreen> {
                       itemCount: snapshot.data!.length,
                       itemBuilder: (context, index) {
                         final restaurant = snapshot.data![index];
+                        // final website = restaurant['website'] as String? ?? 'None';
+
                         return GestureDetector(
                           onTap: () => _editRestaurant(restaurant),
                           child: Container(
@@ -170,8 +178,8 @@ class _EditScreenState extends State<EditScreen> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
+                                  color: Colors.black.withValues(),
+                                  blurRadius: 2,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
@@ -206,40 +214,53 @@ class _EditScreenState extends State<EditScreen> {
             const SizedBox(height: 20),
 
             // Add Restaurant Button
-            ElevatedButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder:
-                      (context) => Dialog(
-                        insetPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
-                        child: AddResto(
-                          onRestaurantAdded: () {
-                            if (widget.onRestaurantUpdated != null) {
-                              widget.onRestaurantUpdated!();
-                            }
-                            _refreshRestaurants();
-                            Navigator.pop(context); // Close the dialog
-                          },
-                        ),
-                      ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(),
+                    blurRadius: 2,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Text(
-                '+ Add Resto',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => Dialog(
+                          insetPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          child: AddResto(
+                            onRestaurantAdded: () {
+                              if (widget.onRestaurantUpdated != null) {
+                                widget.onRestaurantUpdated!();
+                              }
+                              _refreshRestaurants();
+                              Navigator.pop(context); // Close the dialog
+                            },
+                          ),
+                        ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  '+ Add Resto',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),

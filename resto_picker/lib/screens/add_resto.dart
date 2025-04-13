@@ -6,6 +6,7 @@ class AddResto extends StatefulWidget {
   final String? initialName;
   final String? initialMenu;
   final int? restaurantId;
+  final String? websiteLink;
 
   const AddResto({
     super.key,
@@ -13,6 +14,7 @@ class AddResto extends StatefulWidget {
     this.initialName,
     this.initialMenu,
     this.restaurantId,
+    this.websiteLink,
   });
 
   @override
@@ -21,7 +23,9 @@ class AddResto extends StatefulWidget {
 
 class _AddRestoState extends State<AddResto> {
   final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
   final List<TextEditingController> _menuControllers = [
     TextEditingController(),
   ];
@@ -45,8 +49,10 @@ class _AddRestoState extends State<AddResto> {
         _menuControllers.add(TextEditingController(text: item));
       });
     }
-
-    _selectedDelivery = {}; //default
+    if (widget.websiteLink != null && widget.websiteLink != 'None') {
+      _websiteController.text = widget.websiteLink!;
+    }
+    _selectedDelivery = {};
     _selectedMeal = {};
     _selectedCuisine = {};
     _selectedLocation = {};
@@ -56,6 +62,7 @@ class _AddRestoState extends State<AddResto> {
   void dispose() {
     _nameController.dispose();
     _scrollController.dispose();
+    _websiteController.dispose();
     for (var controller in _menuControllers) {
       controller.dispose();
     }
@@ -65,13 +72,13 @@ class _AddRestoState extends State<AddResto> {
   void _addMenuField() {
     setState(() {
       _menuControllers.add(TextEditingController());
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   _scrollController.animateTo(
+      //     _scrollController.position.maxScrollExtent,
+      //     duration: const Duration(milliseconds: 300),
+      //     curve: Curves.easeOut,
+      //   );
+      // });
     });
   }
 
@@ -91,6 +98,10 @@ class _AddRestoState extends State<AddResto> {
           .where((controller) => controller.text.isNotEmpty)
           .map((controller) => controller.text.trim())
           .join(', ');
+      final website =
+          _websiteController.text.trim().isEmpty
+              ? 'None'
+              : _websiteController.text.trim();
 
       if (widget.restaurantId != null) {
         // Update restaurant if restaurantId is provided
@@ -102,6 +113,7 @@ class _AddRestoState extends State<AddResto> {
           _selectedMeal.join(', ').toLowerCase(),
           _selectedCuisine.join(', ').toLowerCase(),
           _selectedLocation.join(', ').toLowerCase(),
+          website,
         );
       } else {
         // Insert a new restaurant
@@ -112,6 +124,7 @@ class _AddRestoState extends State<AddResto> {
           _selectedMeal.join(', ').toLowerCase(),
           _selectedCuisine.join(', ').toLowerCase(),
           _selectedLocation.join(', ').toLowerCase(),
+          website,
         );
       }
 
@@ -159,7 +172,7 @@ class _AddRestoState extends State<AddResto> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         constraints: BoxConstraints(
@@ -203,6 +216,8 @@ class _AddRestoState extends State<AddResto> {
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
                       labelText: 'Resto Name',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -218,6 +233,25 @@ class _AddRestoState extends State<AddResto> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // website - Optional
+                  TextFormField(
+                    controller: _websiteController,
+                    decoration: InputDecoration(
+                      fillColor: Colors.white,
+                      filled: true,
+                      labelText: 'Website URL (Optional)',
+                      hintText: 'https://HellsKitchen.com',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 18,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -241,6 +275,8 @@ class _AddRestoState extends State<AddResto> {
                                   child: TextFormField(
                                     controller: controller,
                                     decoration: InputDecoration(
+                                      fillColor: Colors.white,
+                                      filled: true,
                                       labelText: 'Menu name',
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),

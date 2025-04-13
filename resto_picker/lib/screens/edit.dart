@@ -141,7 +141,7 @@ class _EditScreenState extends State<EditScreen> {
           children: [
             // Header
             const Text(
-              'SPIN',
+              'RESTOS',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),

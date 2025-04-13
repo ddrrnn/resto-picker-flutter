@@ -46,10 +46,10 @@ class _AddRestoState extends State<AddResto> {
       });
     }
 
-    _selectedDelivery = {'Yes'};
-    _selectedMeal = {'Breakfast'};
-    _selectedCuisine = {'Filipino'};
-    _selectedLocation = {'Banwa'};
+    _selectedDelivery = {}; //default
+    _selectedMeal = {};
+    _selectedCuisine = {};
+    _selectedLocation = {};
   }
 
   @override
@@ -212,11 +212,12 @@ class _AddRestoState extends State<AddResto> {
                         vertical: 18,
                       ),
                     ),
-                    validator:
-                        (value) =>
-                            value == null || value.isEmpty
-                                ? 'Please enter a restaurant name'
-                                : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a restaurant name';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -250,6 +251,12 @@ class _AddRestoState extends State<AddResto> {
                                             vertical: 18,
                                           ),
                                     ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter a menu item';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ),
                                 if (_menuControllers.length > 1)
@@ -278,10 +285,21 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Delivery
-                  const Text(
-                    "Delivery",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // Delivery - Required field
+                  Row(
+                    children: const [
+                      Text(
+                        "Delivery",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        " *",
+                        style: TextStyle(color: Colors.red, fontSize: 18),
+                      ),
+                    ],
                   ),
                   Wrap(
                     spacing: 10,
@@ -304,10 +322,21 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Meal
-                  const Text(
-                    "Meal",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // Meal - Required field
+                  Row(
+                    children: const [
+                      Text(
+                        "Meal",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        " *",
+                        style: TextStyle(color: Colors.red, fontSize: 18),
+                      ),
+                    ],
                   ),
                   Wrap(
                     spacing: 10,
@@ -332,10 +361,21 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Cuisine
-                  const Text(
-                    "Cuisine",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // Cuisine - Required field
+                  Row(
+                    children: const [
+                      Text(
+                        "Cuisine",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        " *",
+                        style: TextStyle(color: Colors.red, fontSize: 18),
+                      ),
+                    ],
                   ),
                   Wrap(
                     spacing: 10,
@@ -364,10 +404,21 @@ class _AddRestoState extends State<AddResto> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Location
-                  const Text(
-                    "Location",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // Location - Required field
+                  Row(
+                    children: const [
+                      Text(
+                        "Location",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        " *",
+                        style: TextStyle(color: Colors.red, fontSize: 18),
+                      ),
+                    ],
                   ),
                   Wrap(
                     spacing: 10,
@@ -392,7 +443,25 @@ class _AddRestoState extends State<AddResto> {
 
                   // Save Button
                   ElevatedButton(
-                    onPressed: _isSaving ? null : _saveRestaurant,
+                    onPressed:
+                        _isSaving
+                            ? null
+                            : () {
+                              if (_selectedDelivery.isEmpty ||
+                                  _selectedMeal.isEmpty ||
+                                  _selectedCuisine.isEmpty ||
+                                  _selectedLocation.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Please fill out all fields.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              _saveRestaurant();
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       minimumSize: const Size(double.infinity, 50),

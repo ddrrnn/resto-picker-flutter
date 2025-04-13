@@ -81,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             // loading spinner below the app title
             Positioned(
-              bottom: 100,
+              bottom: 250,
               left: 0,
               right: 0,
               child: Center(

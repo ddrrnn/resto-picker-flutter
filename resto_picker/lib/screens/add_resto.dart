@@ -538,7 +538,7 @@ class _AddRestoState extends State<AddResto> {
                     child:
                         _isSaving
                             ? const CircularProgressIndicator(
-                              color: Colors.white,
+                              color: Colors.black,
                             )
                             : const Text(
                               'SAVE RESTO',

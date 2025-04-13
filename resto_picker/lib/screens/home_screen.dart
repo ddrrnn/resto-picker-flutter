@@ -494,7 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Filter toggle button
             Positioned(
-              top: 10,
+              top: 60,
               left: 10,
               child: GestureDetector(
                 onTap: _toggleFilters,
@@ -573,6 +573,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const SizedBox(height: 30),
                                 // Back button
                                 Row(
                                   children: [
@@ -590,7 +591,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
 
                                 // Filter dropdowns categories
                                 ..._filterOptions.keys.map(

@@ -6,6 +6,7 @@ class AddResto extends StatefulWidget {
   final String? initialName;
   final String? initialMenu;
   final int? restaurantId;
+  final String? websiteLink;
 
   const AddResto({
     super.key,
@@ -13,6 +14,7 @@ class AddResto extends StatefulWidget {
     this.initialName,
     this.initialMenu,
     this.restaurantId,
+    this.websiteLink,
   });
 
   @override
@@ -21,7 +23,9 @@ class AddResto extends StatefulWidget {
 
 class _AddRestoState extends State<AddResto> {
   final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
   final List<TextEditingController> _menuControllers = [
     TextEditingController(),
   ];
@@ -45,8 +49,9 @@ class _AddRestoState extends State<AddResto> {
         _menuControllers.add(TextEditingController(text: item));
       });
     }
-
-    _selectedDelivery = {}; //default
+    if (widget.websiteLink != null && widget.websiteLink != 'None') {
+      _websiteController.text = widget.websiteLink!;
+    }
     _selectedMeal = {};
     _selectedCuisine = {};
     _selectedLocation = {};
@@ -56,6 +61,7 @@ class _AddRestoState extends State<AddResto> {
   void dispose() {
     _nameController.dispose();
     _scrollController.dispose();
+    _websiteController.dispose();
     for (var controller in _menuControllers) {
       controller.dispose();
     }
@@ -65,13 +71,13 @@ class _AddRestoState extends State<AddResto> {
   void _addMenuField() {
     setState(() {
       _menuControllers.add(TextEditingController());
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   _scrollController.animateTo(
+      //     _scrollController.position.maxScrollExtent,
+      //     duration: const Duration(milliseconds: 300),
+      //     curve: Curves.easeOut,
+      //   );
+      // });
     });
   }
 
@@ -91,6 +97,10 @@ class _AddRestoState extends State<AddResto> {
           .where((controller) => controller.text.isNotEmpty)
           .map((controller) => controller.text.trim())
           .join(', ');
+      final website =
+          _websiteController.text.trim().isEmpty
+              ? 'None'
+              : _websiteController.text.trim();
 
       if (widget.restaurantId != null) {
         // Update restaurant if restaurantId is provided
@@ -102,6 +112,7 @@ class _AddRestoState extends State<AddResto> {
           _selectedMeal.join(', ').toLowerCase(),
           _selectedCuisine.join(', ').toLowerCase(),
           _selectedLocation.join(', ').toLowerCase(),
+          website,
         );
       } else {
         // Insert a new restaurant
@@ -112,6 +123,7 @@ class _AddRestoState extends State<AddResto> {
           _selectedMeal.join(', ').toLowerCase(),
           _selectedCuisine.join(', ').toLowerCase(),
           _selectedLocation.join(', ').toLowerCase(),
+          website,
         );
       }
 
@@ -159,332 +171,343 @@ class _AddRestoState extends State<AddResto> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 1,
-          maxWidth: MediaQuery.of(context).size.width * 1.4,
-        ),
-        child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          backgroundColor: const Color(0xFFFFF8EE),
-          body: SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.restaurantId != null
-                            ? 'EDIT RESTO'
-                            : 'NEW RESTO',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+      insetPadding: const EdgeInsets.all(1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
 
-                  // Name Field
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Resto Name',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 18,
+      child: Container(
+        padding: const EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF8EE),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(10),
+          //physics: const ClampingScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.restaurantId != null ? 'EDIT RESTO' : 'NEW RESTO',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a restaurant name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    'Please recommend resto menu',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Menu Fields
-                  Column(
-                    children:
-                        _menuControllers.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final controller = entry.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: controller,
-                                    decoration: InputDecoration(
-                                      labelText: 'Menu name',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 15,
-                                            vertical: 18,
-                                          ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter a menu item';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                if (_menuControllers.length > 1)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                    ),
-                                    onPressed: () => _removeMenuField(index),
-                                    padding: const EdgeInsets.only(left: 10),
-                                  ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                  TextButton(
-                    onPressed: _addMenuField,
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
-                      '+ Add More',
-                      style: TextStyle(fontSize: 16, color: Colors.black),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Name Field
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Resto Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 18,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a restaurant name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
 
-                  // Delivery - Required field
-                  Row(
-                    children: const [
-                      Text(
-                        "Delivery",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        " *",
-                        style: TextStyle(color: Colors.red, fontSize: 18),
-                      ),
-                    ],
+                // website - Optional
+                TextFormField(
+                  controller: _websiteController,
+                  decoration: InputDecoration(
+                    labelText: 'Website URL (Optional)',
+                    hintText: 'https://HellsKitchen.com',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 18,
+                    ),
                   ),
-                  Wrap(
-                    spacing: 10,
-                    children:
-                        ['Yes', 'No'].map((option) {
-                          return FilterChip(
-                            label: Text(option),
-                            selected: _selectedDelivery.contains(option),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedDelivery.add(option);
-                                } else {
-                                  _selectedDelivery.remove(option);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                  const SizedBox(height: 10),
+                ),
+                const SizedBox(height: 20),
 
-                  // Meal - Required field
-                  Row(
-                    children: const [
-                      Text(
-                        "Meal",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        " *",
-                        style: TextStyle(color: Colors.red, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                  Wrap(
-                    spacing: 10,
-                    children:
-                        ['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((
-                          option,
-                        ) {
-                          return FilterChip(
-                            label: Text(option),
-                            selected: _selectedMeal.contains(option),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedMeal.add(option);
-                                } else {
-                                  _selectedMeal.remove(option);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                  const SizedBox(height: 10),
+                const Text(
+                  'Please recommend resto menu',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 10),
 
-                  // Cuisine - Required field
-                  Row(
-                    children: const [
-                      Text(
-                        "Cuisine",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        " *",
-                        style: TextStyle(color: Colors.red, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                  Wrap(
-                    spacing: 10,
-                    children:
-                        [
-                          'Filipino',
-                          'Korean',
-                          'Japanese',
-                          'Italian',
-                          'Mexican',
-                        ].map((option) {
-                          return FilterChip(
-                            label: Text(option),
-                            selected: _selectedCuisine.contains(option),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedCuisine.add(option);
-                                } else {
-                                  _selectedCuisine.remove(option);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Location - Required field
-                  Row(
-                    children: const [
-                      Text(
-                        "Location",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        " *",
-                        style: TextStyle(color: Colors.red, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                  Wrap(
-                    spacing: 10,
-                    children:
-                        ['Banwa', 'UPV', 'Hollywood', 'Malagyan'].map((option) {
-                          return FilterChip(
-                            label: Text(option),
-                            selected: _selectedLocation.contains(option),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedLocation.add(option);
-                                } else {
-                                  _selectedLocation.remove(option);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Save Button
-                  ElevatedButton(
-                    onPressed:
-                        _isSaving
-                            ? null
-                            : () {
-                              if (_selectedDelivery.isEmpty ||
-                                  _selectedMeal.isEmpty ||
-                                  _selectedCuisine.isEmpty ||
-                                  _selectedLocation.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Please fill out all fields.',
+                // Menu Fields
+                Column(
+                  children:
+                      _menuControllers.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final controller = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: controller,
+                                  decoration: InputDecoration(
+                                    labelText: 'Menu name',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
+                                      vertical: 18,
                                     ),
                                   ),
-                                );
-                                return;
-                              }
-                              _saveRestaurant();
-                            },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter a menu item';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              if (_menuControllers.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                  onPressed: () => _removeMenuField(index),
+                                  padding: const EdgeInsets.only(left: 10),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                ),
+                TextButton(
+                  onPressed: _addMenuField,
+                  style: TextButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text(
+                    '+ Add More',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Delivery - Required field
+                Row(
+                  children: const [
+                    Text(
+                      "Delivery",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    child:
-                        _isSaving
-                            ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                            : const Text(
-                              'SAVE RESTO',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                    Text(
+                      " *",
+                      style: TextStyle(color: Colors.red, fontSize: 18),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 10,
+                  children:
+                      ['Yes', 'No'].map((option) {
+                        return FilterChip(
+                          label: Text(option),
+                          selected: _selectedDelivery.contains(option),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedDelivery.add(option);
+                              } else {
+                                _selectedDelivery.remove(option);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 10),
+
+                // Meal - Required field
+                Row(
+                  children: const [
+                    Text(
+                      "Meal",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      " *",
+                      style: TextStyle(color: Colors.red, fontSize: 18),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 10,
+                  children:
+                      ['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((option) {
+                        return FilterChip(
+                          label: Text(option),
+                          selected: _selectedMeal.contains(option),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedMeal.add(option);
+                              } else {
+                                _selectedMeal.remove(option);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 10),
+
+                // Cuisine - Required field
+                Row(
+                  children: const [
+                    Text(
+                      "Cuisine",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      " *",
+                      style: TextStyle(color: Colors.red, fontSize: 18),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 10,
+                  children:
+                      [
+                        'Filipino',
+                        'Korean',
+                        'Japanese',
+                        'Italian',
+                        'Mexican',
+                      ].map((option) {
+                        return FilterChip(
+                          label: Text(option),
+                          selected: _selectedCuisine.contains(option),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedCuisine.add(option);
+                              } else {
+                                _selectedCuisine.remove(option);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 10),
+
+                // Location - Required field
+                Row(
+                  children: const [
+                    Text(
+                      "Location",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      " *",
+                      style: TextStyle(color: Colors.red, fontSize: 18),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 10,
+                  children:
+                      ['Banwa', 'UPV', 'Hollywood', 'Malagyan'].map((option) {
+                        return FilterChip(
+                          label: Text(option),
+                          selected: _selectedLocation.contains(option),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedLocation.add(option);
+                              } else {
+                                _selectedLocation.remove(option);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                Row(),
+
+                // Save Button
+                ElevatedButton(
+                  onPressed:
+                      _isSaving
+                          ? null
+                          : () {
+                            if (_selectedDelivery.isEmpty ||
+                                _selectedMeal.isEmpty ||
+                                _selectedCuisine.isEmpty ||
+                                _selectedLocation.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please fill out all fields.'),
+                                ),
+                              );
+                              return;
+                            }
+                            _saveRestaurant();
+                          },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ],
-              ),
+                  child:
+                      _isSaving
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                            'SAVE RESTO',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                ),
+              ],
             ),
           ),
         ),

@@ -21,7 +21,7 @@ class LocalDatabase {
     final path = join(dbpath, filepath);
 
     // Uncomment if you want to delete DB and recreate
-    // await deleteDatabase(path);
+    await deleteDatabase(path);
 
     return await openDatabase(
       path,
@@ -45,7 +45,8 @@ class LocalDatabase {
         delivery TEXT NOT NULL,
         meal TEXT NOT NULL,
         cuisine TEXT NOT NULL,
-        location TEXT NOT NULL
+        location TEXT NOT NULL,
+        website TEXT NOT NULL
       )
     ''');
 
@@ -61,6 +62,7 @@ class LocalDatabase {
         'meal': 'lunch, dinner, snacks',
         'cuisine': 'filipino',
         'location': 'banwa',
+        'website': 'https://www.facebook.com/VineyardMiagaoPhil',
       },
       {
         'name': 'Hello Burger',
@@ -70,6 +72,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch, dinner, snacks',
         'cuisine': 'italian, filipino',
         'location': 'banwa',
+        'website': 'https://www.facebook.com/HelloBurgerPH',
       },
       {
         'name': 'Sulu Garden',
@@ -78,6 +81,7 @@ class LocalDatabase {
         'meal': 'lunch, dinner',
         'cuisine': 'japanese, filipino',
         'location': 'banwa',
+        'website': 'https://www.facebook.com/sulu.garden',
       },
       {
         'name': 'Pickers',
@@ -86,6 +90,7 @@ class LocalDatabase {
         'meal': 'snacks',
         'cuisine': 'mexican',
         'location': 'banwa',
+        'website': 'https://www.facebook.com/@pickerspitaNdough',
       },
       {
         'name': 'El Garaje',
@@ -95,6 +100,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch, snacks',
         'cuisine': 'italian, filipino',
         'location': 'malagyan',
+        'website': 'https://www.facebook.com/elgarajemiagao',
       },
       {
         'name': 'Spharks',
@@ -103,6 +109,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch, dinner',
         'cuisine': 'filipino',
         'location': 'hollywood',
+        'website': 'https://www.facebook.com/profile.php?id=100045734126189',
       },
       {
         'name': 'Susans',
@@ -111,6 +118,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch, dinner',
         'cuisine': 'filipino',
         'location': 'hollywood',
+        'website': 'None',
       },
       {
         'name': 'CLS',
@@ -120,6 +128,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch, dinner',
         'cuisine': 'italian, filipino',
         'location': 'hollywood',
+        'website': 'https://www.facebook.com/clssuperfood',
       },
       {
         'name': 'Manang Betch',
@@ -129,6 +138,7 @@ class LocalDatabase {
         'meal': 'breakfast, lunch',
         'cuisine': 'filipino',
         'location': 'upv',
+        'website': 'https://www.facebook.com/profile.php?id=100040564886551',
       },
       {
         'name': 'Callies',
@@ -138,6 +148,7 @@ class LocalDatabase {
         'meal': 'snacks',
         'cuisine': 'filipino',
         'location': 'upv',
+        'website': 'None',
       },
       {
         'name': 'Waffle Time',
@@ -147,6 +158,7 @@ class LocalDatabase {
         'meal': 'snacks',
         'cuisine': 'filipino',
         'location': 'upv',
+        'website': 'None',
       },
     ];
 
@@ -162,6 +174,7 @@ class LocalDatabase {
     String meal,
     String cuisine,
     String location,
+    String website,
   ) async {
     final db = await database;
     await db.insert(_tableName, {
@@ -171,6 +184,7 @@ class LocalDatabase {
       'meal': meal,
       'cuisine': cuisine,
       'location': location,
+      'website': website,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -198,6 +212,7 @@ class LocalDatabase {
     String meal,
     String cuisine,
     String location,
+    String website,
   ) async {
     final db = await database;
     await db.update(
@@ -209,6 +224,7 @@ class LocalDatabase {
         'meal': meal,
         'cuisine': cuisine,
         'location': location,
+        'website': website,
       },
       where: 'id = ?',
       whereArgs: [id],

@@ -102,7 +102,7 @@ class LocalDatabase {
         'delivery': 'no',
         'meal': 'breakfast, lunch, dinner',
         'cuisine': 'filipino',
-        'location': 'upv',
+        'location': 'hollywood',
       },
       {
         'name': 'Susans',
@@ -110,16 +110,43 @@ class LocalDatabase {
         'delivery': 'no',
         'meal': 'breakfast, lunch, dinner',
         'cuisine': 'filipino',
-        'location': 'upv',
+        'location': 'hollywood',
       },
       {
         'name': 'CLS',
         'menu':
             'Pizza, Fries, Shake, Burger, Sisig, Burger Steak, Chicken Meal',
-        'delivery': 'no',
+        'delivery': 'yes',
         'meal': 'breakfast, lunch, dinner',
+        'cuisine': 'italian, filipino',
+        'location': 'hollywood',
+      },
+      {
+        'name': 'Manang Betch',
+        'menu':
+            'Lumpiang Toge, Pancit, Adobo, Dinuguan, Porkchop, Nuttered Chicken',
+        'delivery': 'no',
+        'meal': 'breakfast, lunch',
         'cuisine': 'filipino',
-        'location': 'upv, italian',
+        'location': 'upv',
+      },
+      {
+        'name': 'Callies',
+        'menu':
+            'Taro Milktea, Juice, Fries, Brown Sugar Milktea, Vanilla Latte',
+        'delivery': 'no',
+        'meal': 'snacks',
+        'cuisine': 'filipino',
+        'location': 'upv',
+      },
+      {
+        'name': 'Waffle Time',
+        'menu':
+            'Iced Tea, Belgian Waffle, German Cheese Franks, Bavarian Cream, Ham n Cheese, Tuna Salad',
+        'delivery': 'no',
+        'meal': 'snacks',
+        'cuisine': 'filipino',
+        'location': 'upv',
       },
     ];
 

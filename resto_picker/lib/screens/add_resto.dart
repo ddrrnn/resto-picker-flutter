@@ -1,5 +1,5 @@
 /*
-This file implements the restaurant addition/editing form with:
+This file implements the restaurant adding/editing form with:
 - Restaurant details input
 - Menu item management
 - Category selection
@@ -11,12 +11,15 @@ import 'package:resto_picker/local_db.dart';
 
 // Screen for adding or editing restaurant information
 class AddResto extends StatefulWidget {
+  // callback after saving resto info
   final VoidCallback? onRestaurantAdded;
+  // hold data for existing resto | for edit resto
   final String? initialName;
   final String? initialMenu;
   final int? restaurantId;
   final String? websiteLink;
 
+  // constructor
   const AddResto({
     super.key,
     this.onRestaurantAdded,
@@ -30,14 +33,15 @@ class AddResto extends StatefulWidget {
   State<AddResto> createState() => _AddRestoState();
 }
 
-// manages form data and validation
+// manages user input, validation, and saving.
 class _AddRestoState extends State<AddResto> {
-  // form key for validation
+  // form key for form validation
   final _formKey = GlobalKey<FormState>();
 
   // controllers for form fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
+  // controllers for multiple menu items
   final List<TextEditingController> _menuControllers = [
     TextEditingController(),
   ];
@@ -52,7 +56,7 @@ class _AddRestoState extends State<AddResto> {
   Set<String> _selectedCuisine = {};
   Set<String> _selectedLocation = {};
 
-  // loading state
+  // track if resto is being save for loading state
   bool _isSaving = false;
 
   @override
@@ -66,15 +70,18 @@ class _AddRestoState extends State<AddResto> {
         _menuControllers.add(TextEditingController(text: item));
       });
     }
+    //pre-fill resto website link if not null or 'None'
     if (widget.websiteLink != null && widget.websiteLink != 'None') {
       _websiteController.text = widget.websiteLink!;
     }
+    // default empty
     _selectedDelivery = {};
     _selectedMeal = {};
     _selectedCuisine = {};
     _selectedLocation = {};
   }
 
+  // to clean resources
   @override
   void dispose() {
     // clean up controllers
@@ -91,13 +98,6 @@ class _AddRestoState extends State<AddResto> {
   void _addMenuField() {
     setState(() {
       _menuControllers.add(TextEditingController());
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   _scrollController.animateTo(
-      //     _scrollController.position.maxScrollExtent,
-      //     duration: const Duration(milliseconds: 300),
-      //     curve: Curves.easeOut,
-      //   );
-      // });
     });
   }
 
@@ -114,6 +114,7 @@ class _AddRestoState extends State<AddResto> {
     setState(() => _isSaving = true);
 
     try {
+      // trims input: name, each menu item, website
       final name = _nameController.text.trim();
       final menuItems = _menuControllers
           .where((controller) => controller.text.isNotEmpty)
@@ -164,52 +165,30 @@ class _AddRestoState extends State<AddResto> {
     }
   }
 
-  // Widget _buildDropdown<T>({
-  //   required String label,
-  //   required String? value,
-  //   required List<T> options,
-  //   required void Function(T?) onChanged,
-  // }) {
-  //   return DropdownButtonFormField<T>(
-  //     value: value as T,
-  //     items:
-  //         options.map((T option) {
-  //           return DropdownMenuItem<T>(
-  //             value: option,
-  //             child: Text(option.toString()),
-  //           );
-  //         }).toList(),
-  //     onChanged: onChanged,
-  //     decoration: InputDecoration(
-  //       labelText: label,
-  //       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-  //       contentPadding: const EdgeInsets.symmetric(
-  //         horizontal: 15,
-  //         vertical: 18,
-  //       ),
-  //     ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      // limit container size
       child: Container(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 1,
           maxWidth: MediaQuery.of(context).size.width * 1.4,
         ),
         child: Scaffold(
+          // prevents  keyboard overlaps
           resizeToAvoidBottomInset: true,
           backgroundColor: const Color(0xFFFFF8EE),
+          // enables scrolling
           body: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.all(20),
             child: Form(
+              // enables form validation
               key: _formKey,
               child: Column(
+                // lays out form vertically and stretch to expand
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -289,8 +268,9 @@ class _AddRestoState extends State<AddResto> {
                   // Menu Fields
                   Column(
                     children:
-                        // maps to all resto pre-populate list
+                        // maps through the list of text controllers for each menu items
                         _menuControllers.asMap().entries.map((entry) {
+                          // index + value
                           final index = entry.key;
                           final controller = entry.value;
                           return Padding(

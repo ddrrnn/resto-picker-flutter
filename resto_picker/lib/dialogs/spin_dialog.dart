@@ -7,9 +7,9 @@ showing restaurant details including:
 */
 
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'dart:math'; // random
 import 'package:resto_picker/local_db.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart'; // open website link
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // Data class holding restaurant menu information
@@ -34,6 +34,7 @@ class SpinDialog extends StatelessWidget {
     final db = await _localDb.database;
     final result = await db.query(
       'restaurants',
+      // get selected resto menu items and website link
       columns: ['menu', 'website'],
       where: 'name = ?',
       whereArgs: [restoName],
@@ -42,6 +43,7 @@ class SpinDialog extends StatelessWidget {
     if (result.isNotEmpty) {
       final menuString = result.first['menu'] as String;
       final website = result.first['website'] as String;
+      // seperate menu items
       final menuItems = menuString.split(',').map((e) => e.trim()).toList();
       return RestaurantMenuData(menuItems: menuItems, website: website);
     } else {
@@ -50,16 +52,17 @@ class SpinDialog extends StatelessWidget {
   }
 
   // Launches the restaurant's website/facebook page
-  // Handles special cases for Facebook URLs (tries app first, then web)
+  // Handles special cases for Facebook URLs (tries web first, then app)
   Future<void> _launchURL(String websiteurl, BuildContext context) async {
     if (websiteurl.isEmpty || websiteurl == 'None') return;
 
+    // clean and fixes urls
     try {
-      // Clean the URL string
+      //  URL string
       String formattedUrl = websiteurl.trim();
       debugPrint('Original URL: $formattedUrl');
 
-      // Remove common problematic characters
+      // Remove characters (some links have @)
       formattedUrl = formattedUrl.replaceAll('@', '');
 
       // Fix protocol issues
@@ -112,11 +115,14 @@ class SpinDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // wait data from the database
     return FutureBuilder<RestaurantMenuData>(
       future: _getMenuForRestaurant(),
       builder: (context, snapshot) {
+        // if still waiting show loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+          // show error if it goes wrong
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
           // shows an alert dialog if selected resto has no menu items

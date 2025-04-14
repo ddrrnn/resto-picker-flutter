@@ -12,13 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:resto_picker/local_db.dart';
 import 'package:resto_picker/screens/add_resto.dart';
 
-/* 
-Screen for managing restaurants (edit, delete, add)
-
-*/
+// Screen for managing restaurants (edit, delete, add)
 class EditScreen extends StatefulWidget {
+  // triggers a refresh on parent.
   final VoidCallback? onRestaurantUpdated;
-  final Function(int, String) onRestaurantDeleted; // Added this callback
+  final Function(int, String) onRestaurantDeleted;
   final String? websiteLink;
 
   const EditScreen({
@@ -34,6 +32,7 @@ class EditScreen extends StatefulWidget {
 
 // Manages restaurants data and UI
 class _EditScreenState extends State<EditScreen> {
+  // Future list of all restaurants.
   late Future<List<Map<String, dynamic>>> _restaurants;
   final LocalDatabase _localDb = LocalDatabase();
 
@@ -43,7 +42,7 @@ class _EditScreenState extends State<EditScreen> {
     _refreshRestaurants();
   }
 
-  // refreshes the resto list from the dataase
+  // refreshes the resto list from the database
   void _refreshRestaurants() {
     setState(() {
       _restaurants = _localDb.getAllRestaurants();
@@ -81,6 +80,7 @@ class _EditScreenState extends State<EditScreen> {
     // if user tap confirm
     if (shouldDelete ?? false) {
       try {
+        // call db delete function
         final rowsDeleted = await _localDb.deleteRestaurantById(id);
         if (rowsDeleted > 0) {
           if (mounted) {
@@ -139,6 +139,7 @@ class _EditScreenState extends State<EditScreen> {
                 _refreshRestaurants();
                 Navigator.pop(context); // Close the dialog
               },
+              // prefills fields using the selected restaurant’s data.
               initialName: restaurant['name'] as String,
               initialMenu: restaurant['menu'] as String,
               restaurantId: restaurant['id'] as int,
@@ -176,15 +177,19 @@ class _EditScreenState extends State<EditScreen> {
             // Restaurant List
             Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
+                // fetch restaurant list
                 future: _restaurants,
                 builder: (context, snapshot) {
+                  // loading spinner while waiting.
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
+                    // shows error or empty message.
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(child: Text('No restaurants added'));
                   } else {
+                    // display list of restaurant
                     return ListView.builder(
                       shrinkWrap: true,
                       itemCount: snapshot.data!.length,
@@ -193,6 +198,7 @@ class _EditScreenState extends State<EditScreen> {
                         return GestureDetector(
                           // if a resto is tap, it opens the edit dialog
                           onTap: () => _editRestaurant(restaurant),
+                          // each resto container that shows its name and delete icon
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             padding: const EdgeInsets.symmetric(
@@ -254,6 +260,7 @@ class _EditScreenState extends State<EditScreen> {
                   ),
                 ],
               ),
+              // button opens a dialog for adding a new restaurant.
               child: ElevatedButton(
                 onPressed: () {
                   showDialog(

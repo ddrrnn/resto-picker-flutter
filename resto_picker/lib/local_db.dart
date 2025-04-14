@@ -30,10 +30,10 @@ class LocalDatabase {
     return _database!;
   }
 
-  // Initializes dataase
+  // Initializes database
   Future<Database> _initializeDB(String filepath) async {
     final dbpath = await getDatabasesPath();
-    final path = join(dbpath, filepath);
+    final path = join(dbpath, filepath); // create path
 
     // Uncomment if you want to delete DB and recreate
     //await deleteDatabase(path);

@@ -41,10 +41,21 @@ dependencies:
   flutter_popup_card: ^0.0.6
   url_launcher: ^6.3.1
   font_awesome_flutter: ^10.8.0
+  
+  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "lib/assets/app_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "lib/assets/app_logo.png"
+  
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

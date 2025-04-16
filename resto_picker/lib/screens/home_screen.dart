@@ -1,12 +1,24 @@
+/* 
+This file implements the main screen of the Resto Picker application,
+featuring a spinning wheel to randomly select restaurants with filtering function.
+*/
+
 import 'package:flutter/material.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
-import 'dart:math';
-import 'dart:async';
+import 'dart:math'; // random()
+import 'dart:async'; // async
 import 'package:resto_picker/screens/edit.dart';
 import 'package:resto_picker/dialogs/spin_dialog.dart';
 import 'package:resto_picker/local_db.dart';
 import 'package:flutter_popup_card/flutter_popup_card.dart';
 
+/*
+The main screen of the application featuring:
+- Restaurant selection wheel
+- Filtering functionality
+- Edit functionality
+- Spin animation and results
+*/
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,16 +27,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // controls the stream of selected wheel index values.
   StreamController<int> _controller = StreamController<int>.broadcast();
+  // list of resto names to display in the wheel
   List<String> _restaurantNames = [];
+  // local_db instance
   final LocalDatabase _localDb = LocalDatabase();
+  // list of all restaurants in the database
   List<Map<String, dynamic>> _allRestaurants = [];
-  bool _isSpinning = false;
-  bool _dialogShown = false;
+
+  bool _isSpinning = false; // wheel spinning state
+  bool _dialogShown = false; // dialog state
 
   // Different Filter state and options
-  // Dito lang mag add
   bool _showFilters = false;
+  // Dito lang mag add
   final Map<String, List<String>> _filterOptions = {
     'Delivery': ['yes', 'no'],
     'Meal': ['breakfast', 'lunch', 'dinner', 'snacks'],
@@ -32,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Location': ['banwa', 'upv', 'hollywood', 'malagyan'],
   };
 
+  // current selected filters
   final Map<String, Set<String>> _selectedFilters = {
     'Delivery': {},
     'Meal': {},
@@ -45,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadRestaurants();
   }
 
+  // loads restaurants from local_db
   Future<void> _loadRestaurants() async {
     final data = await _localDb.getAllRestaurants();
     setState(() {
@@ -60,17 +79,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // applies current filters to resto list
   void _applyFilters() {
     print("Applying filters...");
 
+    // filters the _allRestaurants based on selected filters.
     setState(() {
+      // filters the list. For each restaurant, it checks each category
       _restaurantNames =
           _allRestaurants
               .where((resto) {
+                // check in each filter category
                 for (var category in _selectedFilters.keys) {
+                  // Gets all selected values in the current filter category
                   final selectedValues = _selectedFilters[category]!;
 
                   if (selectedValues.isNotEmpty) {
+                    // fetches the value for the filter category from the restaurant data
                     final rawValue =
                         resto[category.toLowerCase()]?.toString().toLowerCase();
                     if (rawValue == null) {
@@ -79,13 +104,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                       return false;
                     }
-
+                    // converto to compare
                     final restoValues =
                         rawValue.split(',').map((e) => e.trim()).toSet();
                     print(
                       "Checking $category filter: $selectedValues against $restoValues",
                     );
-
+                    // check if any selected filter matches restaurant values
                     if (!selectedValues.any(
                       (selected) => restoValues.contains(selected),
                     )) {
@@ -106,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Filtered restaurants: $_restaurantNames");
 
       if (_restaurantNames.isEmpty) {
+        // show alert text if no resto match filters
         Future.delayed(Duration.zero, () {
           showDialog(
             context: context,
@@ -128,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Key _wheelKey = UniqueKey();
 
+  // Spins the wheel and randomly select a resto fro the random index
   void _spinWheel() {
     _applyFilters();
     if (_restaurantNames.isNotEmpty) {
@@ -142,7 +169,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
 
         if (selected >= 0 && selected < _restaurantNames.length) {
+          // update wheel list of resto
           _controller.add(selected);
+          // force wheel to rebuild
           setState(() {
             _wheelKey = UniqueKey();
           });
@@ -150,11 +179,13 @@ class _HomeScreenState extends State<HomeScreen> {
           print("Selected restaurant index: $selected");
           print("Selected restaurant: ${_restaurantNames[selected]}");
 
+          // show dialog result after spin stop spinning after 5 secs
           Future.delayed(const Duration(seconds: 5), () {
             setState(() {
               _isSpinning = false;
             });
 
+            // call SpinDialog from spin_dialog.dart file
             showDialog(
               context: context,
               builder: (context) {
@@ -172,12 +203,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // If wheel is spinning, spin button is disabled
+  // or if there are less than 2 resto in the wheel
   bool _isSpinButtonEnabled() {
     return _restaurantNames.isNotEmpty &&
         _restaurantNames.length >= 2 &&
         !_isSpinning;
   }
 
+  // toggles filter panel
   void _toggleFilters() {
     setState(() {
       _showFilters = !_showFilters;
@@ -187,10 +221,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // opens restaurant edit screen in popup card (only the popup of resto list)
   void _editScreen() {
     showPopupCard(
       context: context,
       builder: (context) {
+        // control the popupcard size
         return ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.9,
@@ -198,16 +234,22 @@ class _HomeScreenState extends State<HomeScreen> {
             minWidth: 300,
             minHeight: 300,
           ),
+          // displays the actual PopupCard
           child: PopupCard(
             elevation: 8,
             color: const Color(0xFFFFF8EE),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.0),
             ),
+            // layer widgets
             child: Stack(
               children: [
+                // enable scrolling through the list of resto in the wheel
                 SingleChildScrollView(
+                  // call EditScreen from edit.dart
+                  // if resto list is updated, it refreshes using _loadRestaurants
                   child: EditScreen(
+                    // load resto
                     onRestaurantUpdated: _loadRestaurants,
                     onRestaurantDeleted: (id, name) {
                       setState(() {
@@ -218,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
+                // X button to return to homescreen
                 Positioned(
                   top: 12,
                   right: 12,
@@ -234,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((_) => _loadRestaurants());
   }
 
+  // Returns a color based on index for resto in the wheel
   Color _getColorForIndex(int index) {
     final colors = [
       Color(0xFFA5EAD8),
@@ -249,6 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Store in selectedFilter if user check the item and remove if not
   void _handleFilter(String category, String value, bool selected) {
+    // called when a checkbox is toggled
     setState(() {
       if (selected) {
         _selectedFilters[category]!.add(value);
@@ -265,6 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Expand tile for dropdown values
   Widget _buildFilterDropdown(String category) {
     return ExpansionTile(
       title: Text(category),
@@ -285,6 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // builds a chip/tag for the selected filters with delete option
   Widget _filterTag(String category, String value) {
     return Chip(
       label: Text('$category: $value'),
@@ -293,6 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // displays all selected filters
   Widget _selectedFiltersTag() {
     final chips = <Widget>[];
     _selectedFilters.forEach((category, values) {
@@ -303,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Wrap(spacing: 8, runSpacing: 8, children: chips);
   }
 
+  // call the spin result dialog
   void _showSpinDialog(String restoName) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
@@ -316,6 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // auto-show dialog if only one resto is in the wheel
     if (_restaurantNames.length == 1 && !_dialogShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showSpinDialog(_restaurantNames[0]);
@@ -339,11 +389,13 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         child: Stack(
           children: [
+            // centers the column with wheel + buttons.
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 10),
+                  //  display text if no restaurant or only one is available.
                   SizedBox(
                     width: 300,
                     height: 300,
@@ -368,6 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             )
+                            // spin the wheeeel
                             : FortuneWheel(
                               selected: _controller.stream,
                               items:
@@ -397,8 +450,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                   ),
                   const SizedBox(height: 20),
+                  // Action buttons
                   Column(
                     children: [
+                      // Spin button properties
                       ElevatedButton(
                         onPressed: _isSpinButtonEnabled() ? _spinWheel : null,
                         style: ElevatedButton.styleFrom(
@@ -420,6 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const Text('SPIN'),
                       ),
                       const SizedBox(height: 20),
+                      // Edit button properties
                       ElevatedButton(
                         onPressed: _editScreen,
                         style: ElevatedButton.styleFrom(
@@ -446,8 +502,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // Filter toggle button
             Positioned(
-              top: 10,
+              top: 60,
               left: 10,
               child: GestureDetector(
                 onTap: _toggleFilters,
@@ -482,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Filter Page
+            // Filter Page to show filters
             if (_showFilters)
               Stack(
                 children: [
@@ -526,6 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const SizedBox(height: 30),
                                 // Back button
                                 Row(
                                   children: [
@@ -543,9 +601,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
 
-                                // Filter dropdowns
+                                // Filter dropdowns categories
                                 ..._filterOptions.keys.map(
                                   (category) => _buildFilterDropdown(category),
                                 ),
